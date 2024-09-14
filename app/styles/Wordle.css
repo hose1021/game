@@ -1,0 +1,86 @@
+.wordle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: Arial, sans-serif;
+}
+
+.game-board {
+  display: grid;
+  grid-template-rows: repeat(6, 1fr);
+  gap: 5px;
+  margin-top: 20px;
+}
+
+.guess, .current-guess {
+  display: flex;
+  gap: 5px;
+}
+
+.letter {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+  font-weight: bold;
+  border: 2px solid #ccc;
+  text-transform: uppercase;
+}
+
+.correct {
+  background-color: #6aaa64;
+  color: white;
+}
+
+.present {
+  background-color: #c9b458;
+  color: white;
+}
+
+.absent {
+  background-color: #787c7e;
+  color: white;
+}
+
+.game-over {
+  margin-top: 20px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.keyboard {
+  margin-top: 20px;
+}
+
+.keyboard-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.key {
+  width: 40px;
+  height: 50px;
+  margin: 0 2px;
+  border-radius: 4px;
+  background-color: #d3d6da;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.key.wide {
+  width: 65px;
+}
+
+.key.disabled {
+  background-color: #787c7e;
+  color: #ffffff;
+}
+
+.key:hover:not(:disabled) {
+  background-color: #a7aaad;
+}

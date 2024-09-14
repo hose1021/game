@@ -36,6 +36,10 @@ export const useWordle = (isPracticeMode: boolean) => {
         setGameWon(true);
         setShowWinModal(true);
       }
+      // Восстанавливаем состояние клавиш
+      parsedGuesses.forEach((guess: string) => {
+        updateKeyStates(guess);
+      });
     }
     const savedStats = localStorage.getItem('wordleStats');
     if (savedStats) {
@@ -116,6 +120,13 @@ export const useWordle = (isPracticeMode: boolean) => {
     setCorrectKeys(newCorrectKeys);
     setPresentKeys(newPresentKeys);
     setDisabledKeys(newDisabledKeys);
+
+    // Сохраняем состояние клавиш в localStorage
+    localStorage.setItem('wordleKeyStates', JSON.stringify({
+      correctKeys: Array.from(newCorrectKeys),
+      presentKeys: Array.from(newPresentKeys),
+      disabledKeys: Array.from(newDisabledKeys)
+    }));
   };
 
   const updateStats = (won: boolean, attempts: number) => {
@@ -158,6 +169,20 @@ export const useWordle = (isPracticeMode: boolean) => {
     }
   };
 
+  const loadKeyStates = useCallback(() => {
+    const savedKeyStates = localStorage.getItem('wordleKeyStates');
+    if (savedKeyStates) {
+      const { correctKeys, presentKeys, disabledKeys } = JSON.parse(savedKeyStates);
+      setCorrectKeys(new Set(correctKeys));
+      setPresentKeys(new Set(presentKeys));
+      setDisabledKeys(new Set(disabledKeys));
+    }
+  }, []);
+
+  useEffect(() => {
+    loadKeyStates();
+  }, [loadKeyStates]);
+
   return {
     word,
     guesses,
@@ -174,5 +199,6 @@ export const useWordle = (isPracticeMode: boolean) => {
     handleKeyPress,
     setShowWinModal,
     resetGame,
+    loadKeyStates,
   };
 }

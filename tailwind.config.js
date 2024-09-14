@@ -46,6 +46,9 @@ module.exports = {
         press: 'press 0.1s ease-in-out',
         'fade-in': 'fadeIn 0.3s ease-in-out',
       },
+      opacity: {
+        '80': '0.8',
+      },
     },
   },
   plugins: [],

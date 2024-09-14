@@ -36,7 +36,7 @@ body {
 
 @layer components {
   .letter {
-    @apply w-12 h-12 sm:w-14 sm:h-14 flex justify-center items-center text-2xl font-bold border-2 border-gray-300 dark:border-gray-600 rounded-lg uppercase transition-all duration-300 ease-in-out shadow-md;
+    @apply w-12 h-12 sm:w-14 sm:h-14 flex justify-center items-center text-2xl font-bold border-2 border-gray-300 dark:border-gray-600 uppercase transition-all duration-300 ease-in-out;
   }
 
   .key {
@@ -79,4 +79,41 @@ body {
   100% {
     background-position: 0% 50%;
   }
+}
+
+.streak-calendar {
+  @apply mt-8 bg-background-secondary rounded-lg p-4 shadow-md;
+}
+
+.months-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4;
+}
+
+.month {
+  @apply flex flex-col;
+}
+
+.month-label {
+  @apply text-xs font-medium mb-1 text-gray-500 dark:text-gray-400;
+}
+
+.days-grid {
+  @apply grid grid-cols-7 gap-1;
+}
+
+.day {
+  @apply w-3 h-3 rounded-sm bg-gray-200 dark:bg-gray-700;
+}
+
+.day.has-streak {
+  @apply bg-primary;
+}
+
+.day.future {
+  @apply bg-transparent;
+}
+
+.keyboard-key.used {
+  background-color: #3a3a3c;
+  color: #ffffff;
 }

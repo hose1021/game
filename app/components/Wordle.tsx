@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { useWordle } from '../hooks/useWordle';
 import Keyboard from './Keyboard';
 import Modal from './Modal';
@@ -8,9 +8,7 @@ import { useTheme } from 'next-themes';
 import { GameBoard } from './GameBoard';
 import html2canvas from 'html2canvas';
 import { FiMoon, FiSun, FiShare2, FiHelpCircle, FiBarChart2 } from 'react-icons/fi';
-import useSound from '../hooks/useSound';
 import GameStats from './GameStats';
-import StreakCalendar from './StreakCalendar';
 
 export default function Wordle() {
   const [isPracticeMode, setIsPracticeMode] = useState(false);
@@ -30,6 +28,7 @@ export default function Wordle() {
     handleKeyPress,
     setShowWinModal,
     resetGame,
+    loadKeyStates,
   } = useWordle(isPracticeMode);
 
   const [showRules, setShowRules] = React.useState(false);
@@ -40,32 +39,18 @@ export default function Wordle() {
   const [shareImage, setShareImage] = useState<string | null>(null);
   const [hints, setHints] = useState(3);
 
-  const playTyping = useSound('/sounds/typing.mp3');
-  const playCorrect = useSound('/sounds/correct.mp3');
-  const playIncorrect = useSound('/sounds/incorrect.mp3');
-  const playWin = useSound('/sounds/win.mp3');
-
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
     if (gameOver) return;
 
     const key = event.key.toLowerCase();
     if (key === 'enter') {
       handleKeyPress('Enter');
-      if (currentGuess.length === 5) {
-        if (currentGuess === word) {
-          playCorrect();
-          playWin();
-        } else {
-          playIncorrect();
-        }
-      }
     } else if (key === 'backspace') {
       handleKeyPress('Backspace');
     } else if (/^[a-zəğıöüçş]$/.test(key)) {
       handleKeyPress(key);
-      playTyping();
     }
-  }, [gameOver, handleKeyPress, currentGuess, word, playCorrect, playIncorrect, playWin, playTyping]);
+  }, [gameOver, handleKeyPress, currentGuess, word]);
 
   const useHint = () => {
     if (hints > 0 && !gameOver) {
@@ -88,7 +73,16 @@ export default function Wordle() {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
+  const handleGameEnd = () => {
+    if (gameWon) {
+      setShowWinModal(true);
+    }
+  };
+
   const togglePracticeMode = () => {
+    if (isPracticeMode && gameWon) {
+      handleGameEnd();
+    }
     setIsPracticeMode(!isPracticeMode);
     resetGame();
   };
@@ -142,7 +136,7 @@ export default function Wordle() {
     return canvas.toDataURL('image/png');
   };
 
-  const shareResult = async (platform: 'twitter' | 'whatsapp' | 'instagram') => {
+  const shareResult = async (platform: 'twitter' | 'whatsapp') => {
     const imageUrl = await generateShareImage();
     if (!imageUrl) {
       console.error('Failed to generate share image');
@@ -173,14 +167,14 @@ export default function Wordle() {
       case 'whatsapp':
         shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + '\n' + url)}`;
         break;
-      case 'instagram':
-        navigator.clipboard.writeText(shareText + '\n' + url);
-        alert('Share text copied to clipboard. You can paste it on Instagram.');
-        return;
     }
 
     window.open(shareUrl, '_blank');
   };
+
+  useEffect(() => {
+    loadKeyStates();
+  }, [loadKeyStates]);
 
   return (
     <div 
@@ -196,7 +190,10 @@ export default function Wordle() {
             <FiHelpCircle size={24} />
           </button>
           <h1 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">Azərbaycan Wordle</h1>
-          <div className="flex items-center">
+          <div className="flex items-center space-x-2">
+            <button onClick={() => setShowStats(true)} className="text-sm p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+              <FiBarChart2 size={24} />
+            </button>
             <button onClick={toggleTheme} className="text-sm p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
               {theme === 'dark' ? <FiSun size={24} /> : <FiMoon size={24} />}
             </button>
@@ -207,7 +204,7 @@ export default function Wordle() {
           onClick={togglePracticeMode} 
           className="mt-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
         >
-          {isPracticeMode ? 'End Practice' : 'Start Practice'}
+          {isPracticeMode ? 'Təcrübəni bitir' : 'Təcrübəyə başla'}
         </button>
       </header>
 
@@ -226,7 +223,7 @@ export default function Wordle() {
         {gameOver && (
           <div className="flex flex-col items-center mt-8 animate-fade-in">
             <div className="text-xl sm:text-2xl font-bold mb-4">
-              {gameWon ? `Təbriklər 🎉` : `Oyun bitdi ${word}`}
+              {gameWon ? `Təbriklər 🎉` : `Oyun bitdi. Söz: ${word}`}
             </div>
             {gameWon && (
               <button onClick={() => setShowWinModal(true)} className="bg-gradient-to-r from-primary to-secondary text-white font-bold py-2 px-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center">
@@ -235,10 +232,6 @@ export default function Wordle() {
             )}
           </div>
         )}
-
-        <button onClick={() => setShowStats(true)} className="mt-6 text-sm p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-          <FiBarChart2 size={24} />
-        </button>
       </main>
 
       {/* Footer with keyboard */}
@@ -316,12 +309,6 @@ export default function Wordle() {
           >
             WhatsApp
           </button>
-          <button 
-            onClick={() => shareResult('instagram')} 
-            className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded"
-          >
-            Instagram
-          </button>
         </div>
         {shareImage && (
           <div className="mt-4">
@@ -344,7 +331,6 @@ export default function Wordle() {
             guessDistribution: stats.guessDistribution
           }} 
         />
-        <StreakCalendar streakDays={stats.streakDays || []} />
       </Modal>
     </div>
   );

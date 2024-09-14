@@ -29,7 +29,6 @@ export default function Keyboard({ onKeyPress, disabledKeys, correctKeys, presen
                 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white'
               } hover:bg-gray-300 dark:hover:bg-gray-600`}
               onClick={() => onKeyPress(key)}
-              disabled={disabledKeys.has(key)}
               aria-label={key}
               aria-pressed={disabledKeys.has(key)}
             >

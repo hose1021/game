@@ -8,33 +8,53 @@ interface GameBoardProps {
   gameOver: boolean;
 }
 
+interface LetterProps {
+  letter: string;
+  state: string;
+}
+
 const MAX_ATTEMPTS = 6;
 
 export function GameBoard({ guesses, currentGuess, shake, word, gameOver }: GameBoardProps) {
   const renderGuess = (guess: string, isCurrentGuess = false) => {
     return guess.split('').map((letter, index) => {
-      let className = 'letter w-full aspect-square';
+      let state = 'empty';
       if (!isCurrentGuess) {
         if (word[index] === letter) {
-          className += ' bg-wordle-correct text-white animate-flip';
+          state = 'correct';
         } else if (word.includes(letter)) {
-          className += ' bg-wordle-present text-white animate-flip';
+          state = 'present';
         } else {
-          className += ' bg-wordle-absent text-white animate-flip';
+          state = 'absent';
         }
       }
-      return <div key={index} className={className}>{letter}</div>;
+      return <Letter key={index} letter={letter} state={state} />;
     });
   };
 
   const renderEmptyGuess = () => {
     return Array(5).fill('').map((_, index) => (
-      <div key={index} className="letter w-full aspect-square"></div>
+      <Letter key={index} letter="" state="empty" />
     ));
   };
 
+  const Letter: React.FC<LetterProps> = ({ letter, state }) => {
+    return (
+      <div
+        className={`letter w-full aspect-square flex items-center justify-center text-2xl font-bold border-2 ${
+          state === 'correct' ? 'bg-wordle-correct text-white border-wordle-correct' :
+          state === 'present' ? 'bg-wordle-present text-white border-wordle-present' :
+          state === 'absent' ? 'bg-wordle-absent text-white border-wordle-absent' :
+          'bg-transparent border-gray-300 dark:border-gray-600'
+        }`}
+      >
+        {letter}
+      </div>
+    );
+  };
+
   return (
-    <div className={`game-board w-full max-w-sm mx-auto grid gap-1 ${shake ? 'animate-shake' : ''}`}>
+    <div className={`game-board w-full max-w-sm mx-auto grid gap-1`}>
       {guesses.map((guess, index) => (
         <div key={index} className="grid grid-cols-5 gap-1">{renderGuess(guess)}</div>
       ))}

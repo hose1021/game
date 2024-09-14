@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getDailyWord, getNextWordTime, isValidWord } from '../utils/words';
+import { getDailyWord, getNextWordTime, isValidWord, getRandomWord } from '../utils/words';
 
 const MAX_ATTEMPTS = 6;
 
-export function useWordle() {
+export const useWordle = (isPracticeMode: boolean) => {
   const [word, setWord] = useState('');
   const [guesses, setGuesses] = useState<string[]>([]);
   const [currentGuess, setCurrentGuess] = useState('');
@@ -15,7 +15,14 @@ export function useWordle() {
   const [shake, setShake] = useState(false);
   const [timeUntilNextWord, setTimeUntilNextWord] = useState('');
   const [showWinModal, setShowWinModal] = useState(false);
-  const [stats, setStats] = useState({ played: 0, won: 0, currentStreak: 0, maxStreak: 0 });
+  const [stats, setStats] = useState({ 
+    played: 0, 
+    won: 0, 
+    currentStreak: 0, 
+    maxStreak: 0, 
+    guessDistribution: [0, 0, 0, 0, 0, 0],
+    streakDays: [] as string[]
+  });
 
   useEffect(() => {
     const dailyWord = getDailyWord();
@@ -79,10 +86,10 @@ export function useWordle() {
         setGameOver(true);
         setGameWon(true);
         setShowWinModal(true);
-        updateStats(true);
+        updateStats(true, newGuesses.length);
       } else if (newGuesses.length >= MAX_ATTEMPTS) {
         setGameOver(true);
-        updateStats(false);
+        updateStats(false, newGuesses.length);
       }
     } else if (key === 'Backspace') {
       setCurrentGuess(currentGuess.slice(0, -1));
@@ -111,17 +118,43 @@ export function useWordle() {
     setDisabledKeys(newDisabledKeys);
   };
 
-  const updateStats = (won: boolean) => {
-    const newStats = {
-      played: stats.played + 1,
-      won: stats.won + (won ? 1 : 0),
-      currentStreak: won ? stats.currentStreak + 1 : 0,
-      maxStreak: won ? Math.max(stats.currentStreak + 1, stats.maxStreak) : stats.maxStreak
-    };
-    setStats(newStats);
-    localStorage.setItem('wordleStats', JSON.stringify(newStats));
-    if (won) {
-      setShowWinModal(true);
+  const updateStats = (won: boolean, attempts: number) => {
+    if (!isPracticeMode) {
+      setStats(prevStats => {
+        const newStats = {
+          ...prevStats,
+          played: prevStats.played + 1,
+          won: won ? prevStats.won + 1 : prevStats.won,
+          currentStreak: won ? prevStats.currentStreak + 1 : 0,
+          maxStreak: won ? Math.max(prevStats.maxStreak, prevStats.currentStreak + 1) : prevStats.maxStreak,
+          guessDistribution: [...prevStats.guessDistribution],
+          streakDays: [...prevStats.streakDays]
+        };
+        if (won) {
+          newStats.guessDistribution[attempts - 1]++;
+          const today = new Date().toISOString().split('T')[0];
+          newStats.streakDays.push(today);
+        }
+        localStorage.setItem('wordleStats', JSON.stringify(newStats));
+        return newStats;
+      });
+    }
+  };
+
+  const resetGame = () => {
+    setGuesses([]);
+    setCurrentGuess('');
+    setGameOver(false);
+    setGameWon(false);
+    setDisabledKeys(new Set());
+    setCorrectKeys(new Set());
+    setPresentKeys(new Set());
+    setShake(false);
+    setShowWinModal(false);
+    if (isPracticeMode) {
+      setWord(getRandomWord());
+    } else {
+      setWord(getDailyWord());
     }
   };
 
@@ -140,5 +173,6 @@ export function useWordle() {
     stats,
     handleKeyPress,
     setShowWinModal,
+    resetGame,
   };
 }

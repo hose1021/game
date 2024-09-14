@@ -6,11 +6,14 @@ import Keyboard from './Keyboard';
 import Modal from './Modal';
 import { useTheme } from 'next-themes';
 import { GameBoard } from './GameBoard';
-import { GameStats } from './GameStats';
 import html2canvas from 'html2canvas';
 import { FiMoon, FiSun, FiShare2, FiHelpCircle, FiBarChart2 } from 'react-icons/fi';
+import useSound from '../hooks/useSound';
+import GameStats from './GameStats';
+import StreakCalendar from './StreakCalendar';
 
 export default function Wordle() {
+  const [isPracticeMode, setIsPracticeMode] = useState(false);
   const {
     word,
     guesses,
@@ -26,7 +29,8 @@ export default function Wordle() {
     stats,
     handleKeyPress,
     setShowWinModal,
-  } = useWordle();
+    resetGame,
+  } = useWordle(isPracticeMode);
 
   const [showRules, setShowRules] = React.useState(false);
   const [showStats, setShowStats] = React.useState(false);
@@ -34,6 +38,12 @@ export default function Wordle() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [shareImage, setShareImage] = useState<string | null>(null);
+  const [hints, setHints] = useState(3);
+
+  const playTyping = useSound('/sounds/typing.mp3');
+  const playCorrect = useSound('/sounds/correct.mp3');
+  const playIncorrect = useSound('/sounds/incorrect.mp3');
+  const playWin = useSound('/sounds/win.mp3');
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
     if (gameOver) return;
@@ -41,15 +51,46 @@ export default function Wordle() {
     const key = event.key.toLowerCase();
     if (key === 'enter') {
       handleKeyPress('Enter');
+      if (currentGuess.length === 5) {
+        if (currentGuess === word) {
+          playCorrect();
+          playWin();
+        } else {
+          playIncorrect();
+        }
+      }
     } else if (key === 'backspace') {
       handleKeyPress('Backspace');
     } else if (/^[a-zəğıöüçş]$/.test(key)) {
       handleKeyPress(key);
+      playTyping();
     }
-  }, [gameOver, handleKeyPress]);
+  }, [gameOver, handleKeyPress, currentGuess, word, playCorrect, playIncorrect, playWin, playTyping]);
+
+  const useHint = () => {
+    if (hints > 0 && !gameOver) {
+      const unrevealedIndices = word.split('').reduce((acc, letter, index) => {
+        if (!currentGuess.includes(letter) && !guesses.some(guess => guess[index] === letter)) {
+          acc.push(index);
+        }
+        return acc;
+      }, [] as number[]);
+
+      if (unrevealedIndices.length > 0) {
+        const randomIndex = unrevealedIndices[Math.floor(Math.random() * unrevealedIndices.length)];
+        handleKeyPress(word[randomIndex]);
+        setHints(hints - 1);
+      }
+    }
+  };
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
+
+  const togglePracticeMode = () => {
+    setIsPracticeMode(!isPracticeMode);
+    resetGame();
   };
 
   const renderGuessMap = () => {
@@ -121,7 +162,7 @@ export default function Wordle() {
 
     const resultMap = guessMap.join('\n');
 
-    const shareText = `Azərbaycan Wordle - Mən bu sözü ${guesses.length} cəhddə tapdım. Sən də sına!\n\n${resultMap}`;
+    const shareText = `Azərbaycan Wordle ${guesses.length} cəhdədə uğurla qazandım! ${resultMap} https://your-game-url.com`;
     const url = 'https://your-game-url.com';
 
     let shareUrl = '';
@@ -134,7 +175,7 @@ export default function Wordle() {
         break;
       case 'instagram':
         navigator.clipboard.writeText(shareText + '\n' + url);
-        alert('Mətn kopyalandı. Instagramda paylaşmaq üçün şəkli yükləyin və mətni yapışdırın.');
+        alert('Share text copied to clipboard. You can paste it on Instagram.');
         return;
     }
 
@@ -155,11 +196,19 @@ export default function Wordle() {
             <FiHelpCircle size={24} />
           </button>
           <h1 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">Azərbaycan Wordle</h1>
-          <button onClick={toggleTheme} className="text-sm p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-            {theme === 'dark' ? <FiSun size={24} /> : <FiMoon size={24} />}
-          </button>
+          <div className="flex items-center">
+            <button onClick={toggleTheme} className="text-sm p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+              {theme === 'dark' ? <FiSun size={24} /> : <FiMoon size={24} />}
+            </button>
+          </div>
         </div>
         <div className="text-sm text-center font-medium mt-2">Növbəti söz: <span className="font-bold">{timeUntilNextWord}</span></div>
+        <button 
+          onClick={togglePracticeMode} 
+          className="mt-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        >
+          {isPracticeMode ? 'End Practice' : 'Start Practice'}
+        </button>
       </header>
 
       {/* Main content */}
@@ -177,7 +226,7 @@ export default function Wordle() {
         {gameOver && (
           <div className="flex flex-col items-center mt-8 animate-fade-in">
             <div className="text-xl sm:text-2xl font-bold mb-4">
-              {gameWon ? 'Təbrik edirik! 🎉' : `Oyun bitdi. Söz: ${word}`}
+              {gameWon ? `Təbriklər 🎉` : `Oyun bitdi ${word}`}
             </div>
             {gameWon && (
               <button onClick={() => setShowWinModal(true)} className="bg-gradient-to-r from-primary to-secondary text-white font-bold py-2 px-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center">
@@ -208,8 +257,8 @@ export default function Wordle() {
 
       {/* Modals */}
       <Modal isOpen={showRules} onClose={() => setShowRules(false)}>
-        <h2 className="text-2xl font-bold mb-4">Oyun Qaydaları</h2>
-        <p className="mb-4">5 hərfli sözü 6 cəhddə tapın. Hər təxmindən sonra kafellərin rəngi dəyişəcək.</p>
+        <h2 className="text-2xl font-bold mb-4">Qaydalar</h2>
+        <p className="mb-4">Hər gün yeni bir söz təxmin etmək üçün 6 cəhdiniz var. Hər cəhdinizdən sonra hərflərin yerləşdiyi yeri və hərflərin rəngini görəcəksiniz.</p>
         <div className="mb-4">
           <p className="font-bold mb-2">Nümunələr:</p>
           <div className="flex mb-2">
@@ -220,7 +269,7 @@ export default function Wordle() {
             <span className="letter">B</span>
           </div>
           <p className="mb-2">
-            <span className="font-bold">K</span> hərfi düzgün yerdədir (yaşıl).
+            <span className="font-bold">K</span> hərfi düzgün yerdədir
           </p>
           <div className="flex mb-2">
             <span className="letter mr-1">A</span>
@@ -230,7 +279,7 @@ export default function Wordle() {
             <span className="letter">S</span>
           </div>
           <p className="mb-2">
-            <span className="font-bold">L</span> hərfi sözdə var, amma yanlış yerdədir (sarı).
+            <span className="font-bold">L</span> hərfi sözdə var, lakin düzgün yerdə deyil
           </p>
           <div className="flex mb-2">
             <span className="letter mr-1">Q</span>
@@ -240,18 +289,18 @@ export default function Wordle() {
             <span className="letter">Ş</span>
           </div>
           <p>
-            <span className="font-bold">I</span> hərfi sözdə yoxdur (boz).
+            <span className="font-bold">I</span> hərfi sözdə yoxdur
           </p>
         </div>
-        <p className="mb-2">Hər gün yeni söz olacaq!</p>
+        <p className="mb-2">Hər gün yeni bir söz təxmin etmək üçün 6 cəhdiniz var. Hər cəhdinizdən sonra hərflərin yerləşdiyi yeri və hərflərin rəngini görəcəksiniz.</p>
         <p>Uğurlar!</p>
       </Modal>
       
       <Modal isOpen={showWinModal} onClose={() => setShowWinModal(false)}>
-        <h2 className="text-2xl font-bold mb-4">Təbrik edirik! 🎉</h2>
-        <p className="mb-4">Siz sözü {guesses.length} cəhddə tapdınız.</p>
+        <h2 className="text-2xl font-bold mb-4">Təbriklər 🎉</h2>
+        <p className="mb-4">{guesses.length} cəhdədə uğurla qazandınız!</p>
         <div className="mb-4" ref={guessMapRef}>
-          <h3 className="text-xl font-bold mb-2">Sizin addımlarınız:</h3>
+          <h3 className="text-xl font-bold mb-2">Təxminləriniz:</h3>
           {renderGuessMap()}
         </div>
         <div className="flex justify-around mb-4">
@@ -276,7 +325,7 @@ export default function Wordle() {
         </div>
         {shareImage && (
           <div className="mt-4">
-            <p className="mb-2">Şəkli yükləmək üçün klikləyin:</p>
+            <p className="mb-2">Yükləmək üçün klik edin:</p>
             <a href={shareImage} download="wordle_result.png">
               <img src={shareImage} alt="Wordle result" className="max-w-full h-auto" />
             </a>
@@ -286,7 +335,16 @@ export default function Wordle() {
       
       <Modal isOpen={showStats} onClose={() => setShowStats(false)}>
         <h2 className="text-2xl font-bold mb-4">Statistika</h2>
-        <GameStats stats={stats} />
+        <GameStats 
+          stats={{
+            gamesPlayed: stats.played,
+            gamesWon: stats.won,
+            currentStreak: stats.currentStreak,
+            maxStreak: stats.maxStreak,
+            guessDistribution: stats.guessDistribution
+          }} 
+        />
+        <StreakCalendar streakDays={stats.streakDays || []} />
       </Modal>
     </div>
   );

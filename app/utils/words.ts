@@ -16,3 +16,7 @@ export function getNextWordTime(): Date {
 export function isValidWord(word: string): boolean {
   return WORDS.includes(word);
 }
+
+export function getRandomWord(): string {
+  return WORDS[Math.floor(Math.random() * WORDS.length)];
+}

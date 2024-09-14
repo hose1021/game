@@ -3,9 +3,9 @@ import React from 'react';
 interface GameBoardProps {
   guesses: string[];
   currentGuess: string;
-  shake: boolean;
   word: string;
   gameOver: boolean;
+  // Удалим неиспользуемый проп 'shake'
 }
 
 interface LetterProps {
@@ -15,7 +15,7 @@ interface LetterProps {
 
 const MAX_ATTEMPTS = 6;
 
-export function GameBoard({ guesses, currentGuess, shake, word, gameOver }: GameBoardProps) {
+export const GameBoard: React.FC<GameBoardProps> = ({ guesses, currentGuess, word, gameOver }) => {
   const renderGuess = (guess: string, isCurrentGuess = false) => {
     return guess.split('').map((letter, index) => {
       let state = 'empty';

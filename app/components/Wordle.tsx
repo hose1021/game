@@ -9,6 +9,7 @@ import { GameBoard } from './GameBoard';
 import html2canvas from 'html2canvas';
 import { FiMoon, FiSun, FiShare2, FiHelpCircle, FiBarChart2 } from 'react-icons/fi';
 import GameStats from './GameStats';
+import Image from 'next/image';
 
 export default function Wordle() {
   const [isPracticeMode, setIsPracticeMode] = useState(false);
@@ -21,7 +22,6 @@ export default function Wordle() {
     disabledKeys,
     correctKeys,
     presentKeys,
-    shake,
     timeUntilNextWord,
     showWinModal,
     stats,
@@ -37,7 +37,6 @@ export default function Wordle() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [shareImage, setShareImage] = useState<string | null>(null);
-  const [hints, setHints] = useState(3);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
     if (gameOver) return;
@@ -50,24 +49,7 @@ export default function Wordle() {
     } else if (/^[a-zəğıöüçş]$/.test(key)) {
       handleKeyPress(key);
     }
-  }, [gameOver, handleKeyPress, currentGuess, word]);
-
-  const useHint = () => {
-    if (hints > 0 && !gameOver) {
-      const unrevealedIndices = word.split('').reduce((acc, letter, index) => {
-        if (!currentGuess.includes(letter) && !guesses.some(guess => guess[index] === letter)) {
-          acc.push(index);
-        }
-        return acc;
-      }, [] as number[]);
-
-      if (unrevealedIndices.length > 0) {
-        const randomIndex = unrevealedIndices[Math.floor(Math.random() * unrevealedIndices.length)];
-        handleKeyPress(word[randomIndex]);
-        setHints(hints - 1);
-      }
-    }
-  };
+  }, [gameOver, handleKeyPress]);
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -214,7 +196,6 @@ export default function Wordle() {
           <GameBoard 
             guesses={guesses}
             currentGuess={currentGuess}
-            shake={shake}
             word={word}
             gameOver={gameOver}
           />
@@ -314,7 +295,7 @@ export default function Wordle() {
           <div className="mt-4">
             <p className="mb-2">Yükləmək üçün klik edin:</p>
             <a href={shareImage} download="wordle_result.png">
-              <img src={shareImage} alt="Wordle result" className="max-w-full h-auto" />
+              <Image src={shareImage} alt="Wordle result" width={300} height={300} layout="responsive" />
             </a>
           </div>
         )}

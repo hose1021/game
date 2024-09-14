@@ -24,6 +24,33 @@ export const useWordle = (isPracticeMode: boolean) => {
     streakDays: [] as string[]
   });
 
+  const updateKeyStates = useCallback((guess: string) => {
+    const newCorrectKeys = new Set(correctKeys);
+    const newPresentKeys = new Set(presentKeys);
+    const newDisabledKeys = new Set(disabledKeys);
+
+    guess.split('').forEach((letter, index) => {
+      if (word[index] === letter) {
+        newCorrectKeys.add(letter);
+      } else if (word.includes(letter)) {
+        newPresentKeys.add(letter);
+      } else {
+        newDisabledKeys.add(letter);
+      }
+    });
+
+    setCorrectKeys(newCorrectKeys);
+    setPresentKeys(newPresentKeys);
+    setDisabledKeys(newDisabledKeys);
+
+    // Сохраняем состояние клавиш в localStorage
+    localStorage.setItem('wordleKeyStates', JSON.stringify({
+      correctKeys: Array.from(newCorrectKeys),
+      presentKeys: Array.from(newPresentKeys),
+      disabledKeys: Array.from(newDisabledKeys)
+    }));
+  }, [word, correctKeys, presentKeys, disabledKeys]);
+
   useEffect(() => {
     const dailyWord = getDailyWord();
     setWord(dailyWord);
@@ -46,7 +73,7 @@ export const useWordle = (isPracticeMode: boolean) => {
       setStats(JSON.parse(savedStats));
     }
     updateTimer();
-  }, []);
+  }, [updateKeyStates]);
 
   useEffect(() => {
     const timer = setInterval(updateTimer, 1000);
@@ -62,6 +89,29 @@ export const useWordle = (isPracticeMode: boolean) => {
     const seconds = Math.floor((diff % (1000 * 60)) / 1000);
     setTimeUntilNextWord(`${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
   };
+
+  const updateStats = useCallback((won: boolean, attempts: number) => {
+    if (!isPracticeMode) {
+      setStats(prevStats => {
+        const newStats = {
+          ...prevStats,
+          played: prevStats.played + 1,
+          won: won ? prevStats.won + 1 : prevStats.won,
+          currentStreak: won ? prevStats.currentStreak + 1 : 0,
+          maxStreak: won ? Math.max(prevStats.maxStreak, prevStats.currentStreak + 1) : prevStats.maxStreak,
+          guessDistribution: [...prevStats.guessDistribution],
+          streakDays: [...prevStats.streakDays]
+        };
+        if (won) {
+          newStats.guessDistribution[attempts - 1]++;
+          const today = new Date().toISOString().split('T')[0];
+          newStats.streakDays.push(today);
+        }
+        localStorage.setItem('wordleStats', JSON.stringify(newStats));
+        return newStats;
+      });
+    }
+  }, [isPracticeMode]);
 
   const handleKeyPress = useCallback((key: string) => {
     if (gameOver) return;
@@ -100,57 +150,7 @@ export const useWordle = (isPracticeMode: boolean) => {
     } else if (currentGuess.length < 5) {
       setCurrentGuess(currentGuess + key.toLowerCase());
     }
-  }, [currentGuess, guesses, word, gameOver]);
-
-  const updateKeyStates = (guess: string) => {
-    const newCorrectKeys = new Set(correctKeys);
-    const newPresentKeys = new Set(presentKeys);
-    const newDisabledKeys = new Set(disabledKeys);
-
-    guess.split('').forEach((letter, index) => {
-      if (word[index] === letter) {
-        newCorrectKeys.add(letter);
-      } else if (word.includes(letter)) {
-        newPresentKeys.add(letter);
-      } else {
-        newDisabledKeys.add(letter);
-      }
-    });
-
-    setCorrectKeys(newCorrectKeys);
-    setPresentKeys(newPresentKeys);
-    setDisabledKeys(newDisabledKeys);
-
-    // Сохраняем состояние клавиш в localStorage
-    localStorage.setItem('wordleKeyStates', JSON.stringify({
-      correctKeys: Array.from(newCorrectKeys),
-      presentKeys: Array.from(newPresentKeys),
-      disabledKeys: Array.from(newDisabledKeys)
-    }));
-  };
-
-  const updateStats = (won: boolean, attempts: number) => {
-    if (!isPracticeMode) {
-      setStats(prevStats => {
-        const newStats = {
-          ...prevStats,
-          played: prevStats.played + 1,
-          won: won ? prevStats.won + 1 : prevStats.won,
-          currentStreak: won ? prevStats.currentStreak + 1 : 0,
-          maxStreak: won ? Math.max(prevStats.maxStreak, prevStats.currentStreak + 1) : prevStats.maxStreak,
-          guessDistribution: [...prevStats.guessDistribution],
-          streakDays: [...prevStats.streakDays]
-        };
-        if (won) {
-          newStats.guessDistribution[attempts - 1]++;
-          const today = new Date().toISOString().split('T')[0];
-          newStats.streakDays.push(today);
-        }
-        localStorage.setItem('wordleStats', JSON.stringify(newStats));
-        return newStats;
-      });
-    }
-  };
+  }, [currentGuess, guesses, word, gameOver, updateKeyStates, updateStats]);
 
   const resetGame = () => {
     setGuesses([]);

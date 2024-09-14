@@ -132,6 +132,7 @@ export default function Wordle() {
     const resultMap = guessMap.join('\n');
 
     const shareText = `Azərbaycan Wordle\n\n${resultMap}\n\n#azwordle\n\nSözü təxmin edin https://hose1021.github.io/game/`;
+    const url = 'https://hose1021.github.io/game/';
 
     let shareUrl = '';
     switch (platform) {
@@ -142,7 +143,7 @@ export default function Wordle() {
         shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
         break;
       case 'telegram':
-        shareUrl = `https://t.me/share/url?text=${encodeURIComponent(shareText)}`;
+        shareUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(shareText)}`;
         break;
     }
 

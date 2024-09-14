@@ -13,7 +13,7 @@ const MAX_ATTEMPTS = 6;
 export function GameBoard({ guesses, currentGuess, shake, word, gameOver }: GameBoardProps) {
   const renderGuess = (guess: string, isCurrentGuess = false) => {
     return guess.split('').map((letter, index) => {
-      let className = 'letter';
+      let className = 'letter w-full aspect-square';
       if (!isCurrentGuess) {
         if (word[index] === letter) {
           className += ' bg-wordle-correct text-white animate-flip';
@@ -23,28 +23,28 @@ export function GameBoard({ guesses, currentGuess, shake, word, gameOver }: Game
           className += ' bg-wordle-absent text-white animate-flip';
         }
       }
-      return <span key={index} className={className}>{letter}</span>;
+      return <div key={index} className={className}>{letter}</div>;
     });
   };
 
   const renderEmptyGuess = () => {
     return Array(5).fill('').map((_, index) => (
-      <span key={index} className="letter"></span>
+      <div key={index} className="letter w-full aspect-square"></div>
     ));
   };
 
   return (
-    <div className={`game-board grid gap-1 mb-8 ${shake ? 'animate-shake' : ''}`}>
+    <div className={`game-board w-full max-w-sm mx-auto grid gap-1 ${shake ? 'animate-shake' : ''}`}>
       {guesses.map((guess, index) => (
-        <div key={index} className="flex gap-1">{renderGuess(guess)}</div>
+        <div key={index} className="grid grid-cols-5 gap-1">{renderGuess(guess)}</div>
       ))}
       {!gameOver && guesses.length < MAX_ATTEMPTS && (
-        <div className="flex gap-1">
+        <div className="grid grid-cols-5 gap-1">
           {renderGuess(currentGuess.padEnd(5, ' '), true)}
         </div>
       )}
       {Array(MAX_ATTEMPTS - guesses.length - 1).fill(null).map((_, index) => (
-        <div key={`empty-${index}`} className="flex gap-1">
+        <div key={`empty-${index}`} className="grid grid-cols-5 gap-1">
           {renderEmptyGuess()}
         </div>
       ))}

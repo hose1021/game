@@ -15,6 +15,11 @@ module.exports = {
         'wordle-present': '#c9b458',
         'wordle-absent': '#787c7e',
         'wordle-key': '#d3d6da',
+        'background': 'var(--background)',
+        'background-secondary': 'var(--background-secondary)',
+        'foreground': 'var(--foreground)',
+        'primary': 'var(--primary)',
+        'secondary': 'var(--secondary)',
       },
       keyframes: {
         flip: {

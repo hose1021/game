@@ -8,6 +8,7 @@ import { useTheme } from 'next-themes';
 import { GameBoard } from './GameBoard';
 import { GameStats } from './GameStats';
 import html2canvas from 'html2canvas';
+import { FiMoon, FiSun, FiShare2, FiHelpCircle, FiBarChart2 } from 'react-icons/fi';
 
 export default function Wordle() {
   const {
@@ -142,49 +143,70 @@ export default function Wordle() {
 
   return (
     <div 
-      className="flex flex-col items-center min-h-screen bg-background text-foreground py-8 px-4"
+      className="flex flex-col min-h-screen bg-gradient-to-b from-background to-background-secondary text-foreground"
       ref={containerRef}
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
-      <div className="flex justify-between w-full max-w-lg mb-8">
-        <button onClick={() => setShowRules(true)} className="text-sm underline">Qaydalar</button>
-        <h1 className="text-2xl sm:text-4xl font-bold">Azərbaycan Wordle</h1>
-        <button onClick={toggleTheme} className="text-sm underline">
-          {theme === 'dark' ? 'İşıqlı' : 'Qaranlıq'} Tema
-        </button>
-      </div>
-      <div className="text-sm mb-4">Növbəti söz: {timeUntilNextWord}</div>
-      <GameBoard 
-        guesses={guesses}
-        currentGuess={currentGuess}
-        shake={shake}
-        word={word}
-        gameOver={gameOver}
-      />
-      {gameOver && (
-        <div className="flex flex-col items-center mb-8">
-          <div className="text-xl sm:text-2xl font-bold animate-bounce mb-4">
-            {gameWon ? 'Təbrik edirik! 🎉' : `Oyun bitdi. Söz: ${word}`}
+      {/* Header */}
+      <header className="w-full px-4 py-2">
+        <div className="max-w-lg mx-auto flex justify-between items-center">
+          <button onClick={() => setShowRules(true)} className="text-sm p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+            <FiHelpCircle size={24} />
+          </button>
+          <h1 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">Azərbaycan Wordle</h1>
+          <button onClick={toggleTheme} className="text-sm p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+            {theme === 'dark' ? <FiSun size={24} /> : <FiMoon size={24} />}
+          </button>
+        </div>
+        <div className="text-sm text-center font-medium mt-2">Növbəti söz: <span className="font-bold">{timeUntilNextWord}</span></div>
+      </header>
+
+      {/* Main content */}
+      <main className="flex-grow flex flex-col items-center justify-center px-4 py-8">
+        <div className="w-full max-w-lg">
+          <GameBoard 
+            guesses={guesses}
+            currentGuess={currentGuess}
+            shake={shake}
+            word={word}
+            gameOver={gameOver}
+          />
+        </div>
+
+        {gameOver && (
+          <div className="flex flex-col items-center mt-8 animate-fade-in">
+            <div className="text-xl sm:text-2xl font-bold mb-4">
+              {gameWon ? 'Təbrik edirik! 🎉' : `Oyun bitdi. Söz: ${word}`}
+            </div>
+            {gameWon && (
+              <button onClick={() => setShowWinModal(true)} className="bg-gradient-to-r from-primary to-secondary text-white font-bold py-2 px-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center">
+                <FiShare2 className="mr-2" /> Nəticəni paylaş
+              </button>
+            )}
           </div>
-          {gameWon && (
-            <button onClick={() => setShowWinModal(true)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mb-2">
-              Nəticəni paylaş
-            </button>
+        )}
+
+        <button onClick={() => setShowStats(true)} className="mt-6 text-sm p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+          <FiBarChart2 size={24} />
+        </button>
+      </main>
+
+      {/* Footer with keyboard */}
+      <footer className="w-full px-4 py-2 bg-background">
+        <div className="max-w-lg mx-auto">
+          {!gameOver && (
+            <Keyboard 
+              onKeyPress={handleKeyPress} 
+              disabledKeys={disabledKeys}
+              correctKeys={correctKeys}
+              presentKeys={presentKeys}
+            />
           )}
         </div>
-      )}
-      {!gameOver && (
-        <Keyboard 
-          onKeyPress={handleKeyPress} 
-          disabledKeys={disabledKeys}
-          correctKeys={correctKeys}
-          presentKeys={presentKeys}
-        />
-      )}
-      <button onClick={() => setShowStats(true)} className="mt-4 text-sm underline">
-        Statistika
-      </button>
+      </footer>
+
+      {/* Modals */}
       <Modal isOpen={showRules} onClose={() => setShowRules(false)}>
         <h2 className="text-2xl font-bold mb-4">Oyun Qaydaları</h2>
         <p className="mb-4">5 hərfli sözü 6 cəhddə tapın. Hər təxmindən sonra kafellərin rəngi dəyişəcək.</p>

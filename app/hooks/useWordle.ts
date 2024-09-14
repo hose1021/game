@@ -60,7 +60,7 @@ export function useWordle(isPracticeMode: boolean) {
       presentKeys: Array.from(presentKeys),
       disabledKeys: Array.from(disabledKeys)
     }));
-  }, [word]); // Only depend on word
+  }, [word, correctKeys, presentKeys, disabledKeys]);
 
   useEffect(() => {
     const dailyWord = getDailyWord();
@@ -72,7 +72,6 @@ export function useWordle(isPracticeMode: boolean) {
       if (parsedGuesses.includes(dailyWord)) {
         setGameOver(true);
         setGameWon(true);
-        setShowWinModal(true);
       }
       // Восстанавливаем состояние клавиш
       parsedGuesses.forEach((guess: string) => {
@@ -84,7 +83,7 @@ export function useWordle(isPracticeMode: boolean) {
       setStats(JSON.parse(savedStats));
     }
     updateTimer();
-  }, []); // Remove updateKeyStates from dependencies
+  }, [updateKeyStates]);
 
   useEffect(() => {
     const timer = setInterval(updateTimer, 1000);
@@ -171,7 +170,6 @@ export function useWordle(isPracticeMode: boolean) {
     setCorrectKeys(new Set());
     setPresentKeys(new Set());
     setShake(false);
-    setShowWinModal(false);
     if (isPracticeMode) {
       setWord(getRandomWord());
     } else {

@@ -3,7 +3,7 @@ import { getDailyWord, getNextWordTime, isValidWord, getRandomWord } from '../ut
 
 const MAX_ATTEMPTS = 6;
 
-export const useWordle = (isPracticeMode: boolean) => {
+export function useWordle(isPracticeMode: boolean) {
   const [word, setWord] = useState('');
   const [guesses, setGuesses] = useState<string[]>([]);
   const [currentGuess, setCurrentGuess] = useState('');
@@ -25,31 +25,43 @@ export const useWordle = (isPracticeMode: boolean) => {
   });
 
   const updateKeyStates = useCallback((guess: string) => {
-    const newCorrectKeys = new Set(correctKeys);
-    const newPresentKeys = new Set(presentKeys);
-    const newDisabledKeys = new Set(disabledKeys);
-
-    guess.split('').forEach((letter, index) => {
-      if (word[index] === letter) {
-        newCorrectKeys.add(letter);
-      } else if (word.includes(letter)) {
-        newPresentKeys.add(letter);
-      } else {
-        newDisabledKeys.add(letter);
-      }
+    setCorrectKeys(prevCorrectKeys => {
+      const newCorrectKeys = new Set(prevCorrectKeys);
+      guess.split('').forEach((letter, index) => {
+        if (word[index] === letter) {
+          newCorrectKeys.add(letter);
+        }
+      });
+      return newCorrectKeys;
     });
 
-    setCorrectKeys(newCorrectKeys);
-    setPresentKeys(newPresentKeys);
-    setDisabledKeys(newDisabledKeys);
+    setPresentKeys(prevPresentKeys => {
+      const newPresentKeys = new Set(prevPresentKeys);
+      guess.split('').forEach((letter) => {
+        if (word.includes(letter) && word[guess.indexOf(letter)] !== letter) {
+          newPresentKeys.add(letter);
+        }
+      });
+      return newPresentKeys;
+    });
+
+    setDisabledKeys(prevDisabledKeys => {
+      const newDisabledKeys = new Set(prevDisabledKeys);
+      guess.split('').forEach((letter) => {
+        if (!word.includes(letter)) {
+          newDisabledKeys.add(letter);
+        }
+      });
+      return newDisabledKeys;
+    });
 
     // Сохраняем состояние клавиш в localStorage
     localStorage.setItem('wordleKeyStates', JSON.stringify({
-      correctKeys: Array.from(newCorrectKeys),
-      presentKeys: Array.from(newPresentKeys),
-      disabledKeys: Array.from(newDisabledKeys)
+      correctKeys: Array.from(correctKeys),
+      presentKeys: Array.from(presentKeys),
+      disabledKeys: Array.from(disabledKeys)
     }));
-  }, [word, correctKeys, presentKeys, disabledKeys]);
+  }, [word]); // Only depend on word
 
   useEffect(() => {
     const dailyWord = getDailyWord();
@@ -73,7 +85,7 @@ export const useWordle = (isPracticeMode: boolean) => {
       setStats(JSON.parse(savedStats));
     }
     updateTimer();
-  }, [updateKeyStates]);
+  }, []); // Remove updateKeyStates from dependencies
 
   useEffect(() => {
     const timer = setInterval(updateTimer, 1000);
@@ -170,9 +182,9 @@ export const useWordle = (isPracticeMode: boolean) => {
   };
 
   const loadKeyStates = useCallback(() => {
-    const savedKeyStates = localStorage.getItem('wordleKeyStates');
-    if (savedKeyStates) {
-      const { correctKeys, presentKeys, disabledKeys } = JSON.parse(savedKeyStates);
+    const storedKeyStates = localStorage.getItem('wordleKeyStates');
+    if (storedKeyStates) {
+      const { correctKeys, presentKeys, disabledKeys } = JSON.parse(storedKeyStates);
       setCorrectKeys(new Set(correctKeys));
       setPresentKeys(new Set(presentKeys));
       setDisabledKeys(new Set(disabledKeys));

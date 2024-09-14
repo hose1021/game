@@ -154,9 +154,13 @@ export default function Wordle() {
     window.open(shareUrl, '_blank');
   };
 
-  useEffect(() => {
+  const memoizedLoadKeyStates = useCallback(() => {
     loadKeyStates();
   }, [loadKeyStates]);
+
+  useEffect(() => {
+    memoizedLoadKeyStates();
+  }, [memoizedLoadKeyStates]);
 
   return (
     <div 

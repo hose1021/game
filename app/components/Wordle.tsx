@@ -131,7 +131,7 @@ export default function Wordle() {
 
     const resultMap = guessMap.join('\n');
 
-    const shareText = `Azərbaycan Wordle ${guesses.length} cəhdədə uğurla qazandım! ${resultMap}`;
+    const shareText = `Azərbaycan Wordle ${guesses.length} cəhdədə uğurla qazandım! \n\n ${resultMap}`;
     const url = 'https://hose1021.github.io/game/';
 
     let shareUrl = '';

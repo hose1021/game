@@ -7,7 +7,7 @@ import Modal from './Modal';
 import { useTheme } from 'next-themes';
 import { GameBoard } from './GameBoard';
 import html2canvas from 'html2canvas';
-import { FiMoon, FiSun, FiShare2, FiHelpCircle, FiBarChart2 } from 'react-icons/fi';
+import { FiMoon, FiSun, FiShare2, FiHelpCircle, FiBarChart2, FiSend } from 'react-icons/fi';
 import GameStats from './GameStats';
 import Image from 'next/image';
 
@@ -111,7 +111,7 @@ export default function Wordle() {
     return canvas.toDataURL('image/png');
   };
 
-  const shareResult = async (platform: 'twitter' | 'whatsapp') => {
+  const shareResult = async (platform: 'twitter' | 'whatsapp' | 'telegram') => {
     const imageUrl = await generateShareImage();
     if (!imageUrl) {
       console.error('Failed to generate share image');
@@ -131,16 +131,19 @@ export default function Wordle() {
 
     const resultMap = guessMap.join('\n');
 
-    const shareText = `Azərbaycan Wordle ${guesses.length} cəhdədə uğurla qazandım! \n\n ${resultMap}`;
+    const shareText = `Azərbaycan Wordle\n\n${resultMap}\n\n#azwordle\n\nSözü təxmin edin @https://hose1021.github.io/game/`;
     const url = 'https://hose1021.github.io/game/';
 
     let shareUrl = '';
     switch (platform) {
       case 'twitter':
-        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(url)}`;
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
         break;
       case 'whatsapp':
-        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + '\n\n' + url)}`;
+        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+        break;
+      case 'telegram':
+        shareUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(shareText)}`;
         break;
     }
 
@@ -287,15 +290,21 @@ export default function Wordle() {
         <div className="flex justify-around mb-4">
           <button 
             onClick={() => shareResult('twitter')} 
-            className="bg-blue-400 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded"
+            className="bg-blue-400 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded flex items-center"
           >
-            Twitter
+            <FiShare2 className="mr-2" /> Twitter
           </button>
           <button 
             onClick={() => shareResult('whatsapp')} 
-            className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
+            className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded flex items-center"
           >
-            WhatsApp
+            <FiShare2 className="mr-2" /> WhatsApp
+          </button>
+          <button 
+            onClick={() => shareResult('telegram')} 
+            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded flex items-center"
+          >
+            <FiSend className="mr-2" /> Telegram
           </button>
         </div>
         {shareImage && (

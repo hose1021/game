@@ -1,102 +1,38 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { getDailyWord, getNextWordTime, isValidWord } from '../utils/words';
+import React, { useCallback, useRef, useState } from 'react';
+import { useWordle } from '../hooks/useWordle';
 import Keyboard from './Keyboard';
 import Modal from './Modal';
 import { useTheme } from 'next-themes';
-
-const MAX_ATTEMPTS = 6;
+import { GameBoard } from './GameBoard';
+import { GameStats } from './GameStats';
+import html2canvas from 'html2canvas';
 
 export default function Wordle() {
-  const [word, setWord] = useState('');
-  const [guesses, setGuesses] = useState<string[]>([]);
-  const [currentGuess, setCurrentGuess] = useState('');
-  const [gameOver, setGameOver] = useState(false);
-  const [disabledKeys, setDisabledKeys] = useState<Set<string>>(new Set());
-  const [showRules, setShowRules] = useState(false);
-  const [showStats, setShowStats] = useState(false);
-  const [showWinModal, setShowWinModal] = useState(false);
-  const [stats, setStats] = useState({ played: 0, won: 0, currentStreak: 0, maxStreak: 0 });
-  const [shake, setShake] = useState(false);
-  const [timeUntilNextWord, setTimeUntilNextWord] = useState('');
-  const { theme, setTheme } = useTheme();
-  const [correctKeys, setCorrectKeys] = useState<Set<string>>(new Set());
-  const [presentKeys, setPresentKeys] = useState<Set<string>>(new Set());
+  const {
+    word,
+    guesses,
+    currentGuess,
+    gameOver,
+    gameWon,
+    disabledKeys,
+    correctKeys,
+    presentKeys,
+    shake,
+    timeUntilNextWord,
+    showWinModal,
+    stats,
+    handleKeyPress,
+    setShowWinModal,
+  } = useWordle();
 
+  const [showRules, setShowRules] = React.useState(false);
+  const [showStats, setShowStats] = React.useState(false);
+  const { theme, setTheme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const dailyWord = getDailyWord();
-    setWord(dailyWord);
-    const savedGuesses = localStorage.getItem(`wordleGuesses_${dailyWord}`);
-    if (savedGuesses) {
-      setGuesses(JSON.parse(savedGuesses));
-    }
-    const savedStats = localStorage.getItem('wordleStats');
-    if (savedStats) {
-      setStats(JSON.parse(savedStats));
-    }
-    updateTimer();
-  }, []);
-
-  useEffect(() => {
-    const timer = setInterval(updateTimer, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.focus();
-    }
-  }, []);
-
-  const updateTimer = () => {
-    const nextWordTime = getNextWordTime();
-    const now = new Date();
-    const diff = nextWordTime.getTime() - now.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-    setTimeUntilNextWord(`${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
-  };
-
-  const handleKeyPress = useCallback((key: string) => {
-    if (gameOver) return;
-
-    if (key === 'Enter') {
-      if (currentGuess.length !== 5) {
-        setShake(true);
-        setTimeout(() => setShake(false), 300);
-        return;
-      }
-
-      if (!isValidWord(currentGuess)) {
-        setShake(true);
-        setTimeout(() => setShake(false), 300);
-        alert('Bu söz siyahıda yoxdur!');
-        return;
-      }
-      
-      const newGuesses = [...guesses, currentGuess];
-      setGuesses(newGuesses);
-      localStorage.setItem(`wordleGuesses_${word}`, JSON.stringify(newGuesses));
-      updateKeyStates(currentGuess);
-      setCurrentGuess('');
-
-      if (currentGuess === word) {
-        setGameOver(true);
-        updateStats(true);
-      } else if (newGuesses.length >= MAX_ATTEMPTS) {
-        setGameOver(true);
-        updateStats(false);
-      }
-    } else if (key === 'Backspace') {
-      setCurrentGuess(currentGuess.slice(0, -1));
-    } else if (currentGuess.length < 5) {
-      setCurrentGuess(currentGuess + key.toLowerCase());
-    }
-  }, [currentGuess, guesses, word, gameOver]);
+  const [shareImage, setShareImage] = useState<string | null>(null);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
     if (gameOver) return;
@@ -111,84 +47,41 @@ export default function Wordle() {
     }
   }, [gameOver, handleKeyPress]);
 
-  const updateKeyStates = (guess: string) => {
-    const newCorrectKeys = new Set(correctKeys);
-    const newPresentKeys = new Set(presentKeys);
-    const newDisabledKeys = new Set(disabledKeys);
-
-    guess.split('').forEach((letter, index) => {
-      if (word[index] === letter) {
-        newCorrectKeys.add(letter);
-      } else if (word.includes(letter)) {
-        newPresentKeys.add(letter);
-      } else {
-        newDisabledKeys.add(letter);
-      }
-    });
-
-    setCorrectKeys(newCorrectKeys);
-    setPresentKeys(newPresentKeys);
-    setDisabledKeys(newDisabledKeys);
-  };
-
-  const updateStats = (won: boolean) => {
-    const newStats = {
-      played: stats.played + 1,
-      won: stats.won + (won ? 1 : 0),
-      currentStreak: won ? stats.currentStreak + 1 : 0,
-      maxStreak: won ? Math.max(stats.currentStreak + 1, stats.maxStreak) : stats.maxStreak
-    };
-    setStats(newStats);
-    localStorage.setItem('wordleStats', JSON.stringify(newStats));
-    if (won) {
-      setShowWinModal(true);
-    }
-  };
-
-  const shareResult = () => {
-    const guessMap = guesses.map(guess =>
-      guess.split('').map((letter, index) =>
-        word[index] === letter ? '🟩' : word.includes(letter) ? '🟨' : '⬜'
-      ).join('')
-    );
-
-    while (guessMap.length < 6) {
-      guessMap.push('⬜'.repeat(5));
-    }
-
-    const result = guessMap.join('\n');
-    
-    const shareText = `Azərbaycan Wordle ${stats.played}\n\n${result}\n\nhttps://your-game-url.com`;
-    
-    if (navigator.share) {
-      navigator.share({
-        title: 'Azərbaycan Wordle Nəticəsi',
-        text: shareText
-      }).catch(console.error);
-    } else {
-      navigator.clipboard.writeText(shareText);
-      alert('Nəticə kopyalandı!');
-    }
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
   const renderGuessMap = () => {
     const guessMap = guesses.map(guess =>
-      guess.split('').map((letter, index) =>
-        word[index] === letter ? '🟩' : word.includes(letter) ? '🟨' : '⬜'
-      ).join('')
+      guess.split('').map((letter, index) => {
+        if (word[index] === letter) {
+          return 'correct';
+        } else if (word.includes(letter)) {
+          return 'present';
+        } else {
+          return 'absent';
+        }
+      })
     );
 
-    // Добавляем пустые строки, если количество попыток меньше 6
     while (guessMap.length < 6) {
-      guessMap.push('⬜'.repeat(5));
+      guessMap.push(Array(5).fill('empty'));
     }
 
     return (
       <div className="grid gap-1">
-        {guessMap.map((row, index) => (
-          <div key={index} className="flex gap-1">
-            {row.split('').map((cube, cubeIndex) => (
-              <span key={cubeIndex} className="text-2xl">{cube}</span>
+        {guessMap.map((row, rowIndex) => (
+          <div key={rowIndex} className="flex gap-1">
+            {row.map((status, letterIndex) => (
+              <div
+                key={letterIndex}
+                className={`w-6 h-6 border-2 ${
+                  status === 'correct' ? 'bg-wordle-correct border-wordle-correct' :
+                  status === 'present' ? 'bg-wordle-present border-wordle-present' :
+                  status === 'absent' ? 'bg-wordle-absent border-wordle-absent' :
+                  'bg-gray-200 border-gray-300 dark:bg-gray-700 dark:border-gray-600'
+                }`}
+              ></div>
             ))}
           </div>
         ))}
@@ -196,30 +89,55 @@ export default function Wordle() {
     );
   };
 
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
+  const guessMapRef = useRef<HTMLDivElement>(null);
 
-  const renderGuess = (guess: string, isCurrentGuess = false) => {
-    return guess.split('').map((letter, index) => {
-      let className = 'letter';
-      if (!isCurrentGuess) {
-        if (word[index] === letter) {
-          className += ' bg-wordle-correct text-white animate-flip';
-        } else if (word.includes(letter)) {
-          className += ' bg-wordle-present text-white animate-flip';
-        } else {
-          className += ' bg-wordle-absent text-white animate-flip';
-        }
-      }
-      return <span key={index} className={className}>{letter}</span>;
+  const generateShareImage = async () => {
+    if (!guessMapRef.current) return null;
+
+    const canvas = await html2canvas(guessMapRef.current, {
+      backgroundColor: theme === 'dark' ? '#0a0a0a' : '#ffffff',
     });
+    return canvas.toDataURL('image/png');
   };
 
-  const renderEmptyGuess = () => {
-    return Array(5).fill('').map((_, index) => (
-      <span key={index} className="letter"></span>
-    ));
+  const shareResult = async (platform: 'twitter' | 'whatsapp' | 'instagram') => {
+    const imageUrl = await generateShareImage();
+    if (!imageUrl) {
+      console.error('Failed to generate share image');
+      return;
+    }
+    setShareImage(imageUrl);
+
+    const guessMap = guesses.map(guess =>
+      guess.split('').map((letter, index) =>
+        word[index] === letter ? '🟩' : word.includes(letter) ? '🟨' : '⬛'
+      ).join('')
+    );
+
+    while (guessMap.length < 6) {
+      guessMap.push('⬛'.repeat(5));
+    }
+
+    const resultMap = guessMap.join('\n');
+
+    const shareText = `Azərbaycan Wordle - Mən bu sözü ${guesses.length} cəhddə tapdım. Sən də sına!\n\n${resultMap}`;
+    const url = 'https://your-game-url.com';
+
+    let shareUrl = '';
+    switch (platform) {
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(url)}`;
+        break;
+      case 'whatsapp':
+        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + '\n' + url)}`;
+        break;
+      case 'instagram':
+        navigator.clipboard.writeText(shareText + '\n' + url);
+        alert('Mətn kopyalandı. Instagramda paylaşmaq üçün şəkli yükləyin və mətni yapışdırın.');
+        return;
+    }
+
+    window.open(shareUrl, '_blank');
   };
 
   return (
@@ -237,37 +155,33 @@ export default function Wordle() {
         </button>
       </div>
       <div className="text-sm mb-4">Növbəti söz: {timeUntilNextWord}</div>
-      <div className={`game-board grid gap-1 mb-8 ${shake ? 'animate-shake' : ''}`}>
-        {guesses.map((guess, index) => (
-          <div key={index} className="flex gap-1">{renderGuess(guess)}</div>
-        ))}
-        {!gameOver && guesses.length < MAX_ATTEMPTS && (
-          <div className="flex gap-1">
-            {renderGuess(currentGuess.padEnd(5, ' '), true)}
-          </div>
-        )}
-        {Array(MAX_ATTEMPTS - guesses.length - 1).fill(null).map((_, index) => (
-          <div key={`empty-${index}`} className="flex gap-1">
-            {renderEmptyGuess()}
-          </div>
-        ))}
-      </div>
+      <GameBoard 
+        guesses={guesses}
+        currentGuess={currentGuess}
+        shake={shake}
+        word={word}
+        gameOver={gameOver}
+      />
       {gameOver && (
         <div className="flex flex-col items-center mb-8">
           <div className="text-xl sm:text-2xl font-bold animate-bounce mb-4">
-            {word === guesses[guesses.length - 1] ? 'Təbrik edirik!' : `Oyun bitdi. Söz: ${word}`}
+            {gameWon ? 'Təbrik edirik! 🎉' : `Oyun bitdi. Söz: ${word}`}
           </div>
-          <button onClick={shareResult} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-            Paylaş
-          </button>
+          {gameWon && (
+            <button onClick={() => setShowWinModal(true)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mb-2">
+              Nəticəni paylaş
+            </button>
+          )}
         </div>
       )}
-      <Keyboard 
-        onKeyPress={handleKeyPress} 
-        disabledKeys={disabledKeys}
-        correctKeys={correctKeys}
-        presentKeys={presentKeys}
-      />
+      {!gameOver && (
+        <Keyboard 
+          onKeyPress={handleKeyPress} 
+          disabledKeys={disabledKeys}
+          correctKeys={correctKeys}
+          presentKeys={presentKeys}
+        />
+      )}
       <button onClick={() => setShowStats(true)} className="mt-4 text-sm underline">
         Statistika
       </button>
@@ -312,40 +226,45 @@ export default function Wordle() {
       </Modal>
       
       <Modal isOpen={showWinModal} onClose={() => setShowWinModal(false)}>
-        <h2 className="text-2xl font-bold mb-4">Təbrik edirik!</h2>
+        <h2 className="text-2xl font-bold mb-4">Təbrik edirik! 🎉</h2>
         <p className="mb-4">Siz sözü {guesses.length} cəhddə tapdınız.</p>
-        <div className="mb-4">
+        <div className="mb-4" ref={guessMapRef}>
           <h3 className="text-xl font-bold mb-2">Sizin addımlarınız:</h3>
           {renderGuessMap()}
         </div>
-        <button 
-          onClick={shareResult} 
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Nəticəni paylaş
-        </button>
+        <div className="flex justify-around mb-4">
+          <button 
+            onClick={() => shareResult('twitter')} 
+            className="bg-blue-400 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded"
+          >
+            Twitter
+          </button>
+          <button 
+            onClick={() => shareResult('whatsapp')} 
+            className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
+          >
+            WhatsApp
+          </button>
+          <button 
+            onClick={() => shareResult('instagram')} 
+            className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded"
+          >
+            Instagram
+          </button>
+        </div>
+        {shareImage && (
+          <div className="mt-4">
+            <p className="mb-2">Şəkli yükləmək üçün klikləyin:</p>
+            <a href={shareImage} download="wordle_result.png">
+              <img src={shareImage} alt="Wordle result" className="max-w-full h-auto" />
+            </a>
+          </div>
+        )}
       </Modal>
       
       <Modal isOpen={showStats} onClose={() => setShowStats(false)}>
         <h2 className="text-2xl font-bold mb-4">Statistika</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center">
-            <div className="text-3xl font-bold">{stats.played}</div>
-            <div className="text-sm">Oynanılıb</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold">{Math.round((stats.won / stats.played) * 100) || 0}%</div>
-            <div className="text-sm">Qazanma %</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold">{stats.currentStreak}</div>
-            <div className="text-sm">Cari seriya</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold">{stats.maxStreak}</div>
-            <div className="text-sm">Ən yaxşı seriya</div>
-          </div>
-        </div>
+        <GameStats stats={stats} />
       </Modal>
     </div>
   );

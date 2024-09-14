@@ -3,8 +3,6 @@ export const WORDS = ["abdal","abidə", "abort", "abunə", "abzas", "acika", "ac
 export function getDailyWord(): string {
   const today = new Date();
   const index = (today.getFullYear() * 365 + today.getMonth() * 31 + today.getDate()) % WORDS.length;
-
-  // console.log(WORDS[index]);
   
   return WORDS[index];
 }

@@ -138,8 +138,8 @@ export default function Wordle() {
 
     const resultMap = guessMap.join('\n');
 
-    const shareText = `Azərbaycan Wordle ${guesses.length} cəhdədə uğurla qazandım! ${resultMap} https://your-game-url.com`;
-    const url = 'https://your-game-url.com';
+    const shareText = `Azərbaycan Wordle ${guesses.length} cəhdədə uğurla qazandım! ${resultMap}`;
+    const url = 'https://hose1021.github.io/game/';
 
     let shareUrl = '';
     switch (platform) {
@@ -147,7 +147,7 @@ export default function Wordle() {
         shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(url)}`;
         break;
       case 'whatsapp':
-        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + '\n' + url)}`;
+        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + '\n\n' + url)}`;
         break;
     }
 

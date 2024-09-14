@@ -14,7 +14,6 @@ export function useWordle(isPracticeMode: boolean) {
   const [presentKeys, setPresentKeys] = useState<Set<string>>(new Set());
   const [shake, setShake] = useState(false);
   const [timeUntilNextWord, setTimeUntilNextWord] = useState('');
-  const [showWinModal, setShowWinModal] = useState(false);
   const [stats, setStats] = useState({ 
     played: 0, 
     won: 0, 
@@ -151,7 +150,6 @@ export function useWordle(isPracticeMode: boolean) {
       if (currentGuess === word) {
         setGameOver(true);
         setGameWon(true);
-        setShowWinModal(true);
         updateStats(true, newGuesses.length);
       } else if (newGuesses.length >= MAX_ATTEMPTS) {
         setGameOver(true);
@@ -206,10 +204,8 @@ export function useWordle(isPracticeMode: boolean) {
     presentKeys,
     shake,
     timeUntilNextWord,
-    showWinModal,
     stats,
     handleKeyPress,
-    setShowWinModal,
     resetGame,
     loadKeyStates,
   };

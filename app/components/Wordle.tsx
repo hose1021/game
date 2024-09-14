@@ -23,10 +23,8 @@ export default function Wordle() {
     correctKeys,
     presentKeys,
     timeUntilNextWord,
-    showWinModal,
     stats,
     handleKeyPress,
-    setShowWinModal,
     resetGame,
     loadKeyStates,
   } = useWordle(isPracticeMode);
@@ -37,6 +35,7 @@ export default function Wordle() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [shareImage, setShareImage] = useState<string | null>(null);
+  const [showWinModal, setShowWinModal] = useState(false);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
     if (gameOver) return;
@@ -55,15 +54,9 @@ export default function Wordle() {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
-  const handleGameEnd = () => {
-    if (gameWon) {
-      setShowWinModal(true);
-    }
-  };
-
   const togglePracticeMode = () => {
     if (isPracticeMode && gameWon) {
-      handleGameEnd();
+      setShowWinModal(false);
     }
     setIsPracticeMode(!isPracticeMode);
     resetGame();
@@ -161,6 +154,16 @@ export default function Wordle() {
   useEffect(() => {
     memoizedLoadKeyStates();
   }, [memoizedLoadKeyStates]);
+
+  useEffect(() => {
+    if (gameWon) {
+      setShowWinModal(true);
+    }
+  }, [gameWon]);
+
+  const handleCloseWinModal = () => {
+    setShowWinModal(false);
+  };
 
   return (
     <div 
@@ -274,7 +277,7 @@ export default function Wordle() {
         <p>Uğurlar!</p>
       </Modal>
       
-      <Modal isOpen={showWinModal} onClose={() => setShowWinModal(false)}>
+      <Modal isOpen={showWinModal} onClose={handleCloseWinModal}>
         <h2 className="text-2xl font-bold mb-4">Təbriklər 🎉</h2>
         <p className="mb-4">{guesses.length} cəhdədə uğurla qazandınız!</p>
         <div className="mb-4" ref={guessMapRef}>

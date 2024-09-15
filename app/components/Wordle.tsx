@@ -244,7 +244,7 @@ export default function Wordle() {
       {/* Modals */}
       <Modal isOpen={showRules} onClose={() => setShowRules(false)}>
         <h2 className="text-2xl font-bold mb-4">Qaydalar</h2>
-        <p className="mb-4">Hər gün yeni bir söz təxmin etmək üçün 6 cəhdiniz var. Hər cəhdinizdən sonra hərflərin yerləşdiyi yeri və hərflərin rəngini görəcəksiniz.</p>
+        <p className="mb-4">Hər gün yeni bir 5 hərfli Azərbaycan sözü təxmin etmək üçün 6 cəhdiniz var. Hər cəhdinizdən sonra hərflərin yerləşdiyi yeri və hərflərin rəngini görəcəksiniz.</p>
         <div className="mb-4">
           <p className="font-bold mb-2">Nümunələr:</p>
           <div className="flex mb-2">
@@ -278,7 +278,10 @@ export default function Wordle() {
             <span className="font-bold">I</span> hərfi sözdə yoxdur
           </p>
         </div>
-        <p className="mb-2">Hər gün yeni bir söz təxmin etmək üçün 6 cəhdiniz var. Hər cəhdinizdən sonra hərflərin yerləşdiyi yeri və hərflərin rəngini görəcəksiniz.</p>
+        <p className="mb-2">Eyni sözü təkrar istifadə edə bilməzsiniz.</p>
+        <p className="mb-2">Gündəlik sözü tapdıqdan sonra, praktika rejimində oynamağa davam edə bilərsiniz.</p>
+        <p className="mb-2">Praktika rejimində ardıcıl qazanılan oyunların sayı hesablanır.</p>
+        <p className="mb-2">Oyun nəticələrinizi Twitter, WhatsApp və ya Telegram vasitəsilə paylaşa bilərsiniz.</p>
         <p>Uğurlar!</p>
       </Modal>
       

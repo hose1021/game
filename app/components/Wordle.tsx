@@ -7,12 +7,11 @@ import Modal from './Modal';
 import { useTheme } from 'next-themes';
 import { GameBoard } from './GameBoard';
 import html2canvas from 'html2canvas';
-import { FiMoon, FiSun, FiShare2, FiHelpCircle, FiBarChart2, FiSend } from 'react-icons/fi';
+import { FiMoon, FiSun, FiShare2, FiHelpCircle, FiBarChart2, FiSend, FiPlay, FiSquare } from 'react-icons/fi';
 import GameStats from './GameStats';
 import Image from 'next/image';
 
 export default function Wordle() {
-  const [isPracticeMode, setIsPracticeMode] = useState(false);
   const {
     word,
     guesses,
@@ -25,9 +24,11 @@ export default function Wordle() {
     timeUntilNextWord,
     stats,
     handleKeyPress,
-    resetGame,
-    loadKeyStates,
-  } = useWordle(isPracticeMode);
+    isPracticeMode,
+    togglePracticeMode,
+    practiceStreak,
+    dailyWordFound,
+  } = useWordle();
 
   const [showRules, setShowRules] = React.useState(false);
   const [showStats, setShowStats] = React.useState(false);
@@ -52,14 +53,6 @@ export default function Wordle() {
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
-
-  const togglePracticeMode = () => {
-    if (isPracticeMode && gameWon) {
-      setShowWinModal(false);
-    }
-    setIsPracticeMode(!isPracticeMode);
-    resetGame();
   };
 
   const renderGuessMap = () => {
@@ -150,14 +143,6 @@ export default function Wordle() {
     window.open(shareUrl, '_blank');
   };
 
-  const memoizedLoadKeyStates = useCallback(() => {
-    loadKeyStates();
-  }, [loadKeyStates]);
-
-  useEffect(() => {
-    memoizedLoadKeyStates();
-  }, [memoizedLoadKeyStates]);
-
   useEffect(() => {
     if (gameWon) {
       setShowWinModal(true);
@@ -183,6 +168,9 @@ export default function Wordle() {
           </button>
           <h1 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">Azərbaycan Wordle</h1>
           <div className="flex items-center space-x-2">
+            <button onClick={togglePracticeMode} className="text-sm p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+              {isPracticeMode ? <FiSquare size={24} /> : <FiPlay size={24} />}
+            </button>
             <button onClick={() => setShowStats(true)} className="text-sm p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
               <FiBarChart2 size={24} />
             </button>
@@ -191,18 +179,24 @@ export default function Wordle() {
             </button>
           </div>
         </div>
-        <div className="text-sm text-center font-medium mt-2">Növbəti söz: <span className="font-bold">{timeUntilNextWord}</span></div>
-        <button 
-          onClick={togglePracticeMode} 
-          className="mt-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          {isPracticeMode ? 'Təcrübəni bitir' : 'Təcrübəyə başla'}
-        </button>
+        {!isPracticeMode && !dailyWordFound && (
+          <div className="text-sm text-center font-medium mt-2">Növbəti söz: <span className="font-bold">{timeUntilNextWord}</span></div>
+        )}
+        {isPracticeMode && (
+          <div className="text-sm text-center font-medium mt-2">
+            Praktika rejimi - Ardıcıl qazanılan: <span className="font-bold">{practiceStreak}</span>
+          </div>
+        )}
+        {!isPracticeMode && dailyWordFound && (
+          <div className="text-sm text-center font-medium mt-2">
+            Gündəlik söz tapıldı. Praktika rejimində oynamaq üçün yuxarıdakı düyməyə basın.
+          </div>
+        )}
       </header>
 
       {/* Main content */}
       <main className="flex-grow flex flex-col items-center justify-center px-4 py-8">
-        <div className="w-full max-w-lg">
+        <div className="w-full max-w-lg flex justify-center">
           <GameBoard 
             guesses={guesses}
             currentGuess={currentGuess}

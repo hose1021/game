@@ -3,7 +3,7 @@ import { getDailyWord, getNextWordTime, isValidWord, getRandomWord } from '../ut
 
 const MAX_ATTEMPTS = 6;
 
-export function useWordle(isPracticeMode: boolean) {
+export function useWordle() {
   const [word, setWord] = useState('');
   const [guesses, setGuesses] = useState<string[]>([]);
   const [currentGuess, setCurrentGuess] = useState('');
@@ -22,6 +22,9 @@ export function useWordle(isPracticeMode: boolean) {
     guessDistribution: [0, 0, 0, 0, 0, 0],
     streakDays: [] as string[]
   });
+  const [isPracticeMode, setIsPracticeMode] = useState(false);
+  const [practiceStreak, setPracticeStreak] = useState(0);
+  const [dailyWordFound, setDailyWordFound] = useState(false);
 
   const updateKeyStates = useCallback((guess: string) => {
     setCorrectKeys(prevCorrectKeys => {
@@ -54,48 +57,61 @@ export function useWordle(isPracticeMode: boolean) {
       return newDisabledKeys;
     });
 
-    // Сохраняем состояние клавиш в localStorage
     localStorage.setItem('wordleKeyStates', JSON.stringify({
       correctKeys: Array.from(correctKeys),
       presentKeys: Array.from(presentKeys),
       disabledKeys: Array.from(disabledKeys)
     }));
-  }, [word, correctKeys, presentKeys, disabledKeys]);
+  }, [word]);
+
+  const loadKeyStates = useCallback(() => {
+    const storedKeyStates = localStorage.getItem('wordleKeyStates');
+    if (storedKeyStates) {
+      const { correctKeys, presentKeys, disabledKeys } = JSON.parse(storedKeyStates);
+      setCorrectKeys(new Set(correctKeys));
+      setPresentKeys(new Set(presentKeys));
+      setDisabledKeys(new Set(disabledKeys));
+    }
+  }, []);
 
   useEffect(() => {
     const dailyWord = getDailyWord();
     const lastPlayedDate = localStorage.getItem('lastPlayedDate');
     const currentDate = new Date().toDateString();
+    const savedGuesses = localStorage.getItem(`wordleGuesses_${dailyWord}`);
 
     if (lastPlayedDate !== currentDate) {
-      // Новый день - очищаем состояние клавиатуры
       setDisabledKeys(new Set());
       setCorrectKeys(new Set());
       setPresentKeys(new Set());
       localStorage.removeItem('wordleKeyStates');
       localStorage.setItem('lastPlayedDate', currentDate);
+      setDailyWordFound(false);
+    } else {
+      loadKeyStates();
     }
 
-    setWord(dailyWord);
-    const savedGuesses = localStorage.getItem(`wordleGuesses_${dailyWord}`);
     if (savedGuesses) {
       const parsedGuesses = JSON.parse(savedGuesses);
       setGuesses(parsedGuesses);
       if (parsedGuesses.includes(dailyWord)) {
-        setGameOver(true);
-        setGameWon(true);
+        setDailyWordFound(true);
+        setIsPracticeMode(true);
+        setWord(getRandomWord());
+      } else {
+        setWord(dailyWord);
       }
-      // Восстанавливаем состояние клавиш
-      parsedGuesses.forEach((guess: string) => {
-        updateKeyStates(guess);
-      });
+      parsedGuesses.forEach(updateKeyStates);
+    } else {
+      setWord(dailyWord);
     }
+
     const savedStats = localStorage.getItem('wordleStats');
     if (savedStats) {
       setStats(JSON.parse(savedStats));
     }
     updateTimer();
-  }, [updateKeyStates]);
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(updateTimer, 1000);
@@ -113,27 +129,25 @@ export function useWordle(isPracticeMode: boolean) {
   };
 
   const updateStats = useCallback((won: boolean, attempts: number) => {
-    if (!isPracticeMode) {
-      setStats(prevStats => {
-        const newStats = {
-          ...prevStats,
-          played: prevStats.played + 1,
-          won: won ? prevStats.won + 1 : prevStats.won,
-          currentStreak: won ? prevStats.currentStreak + 1 : 0,
-          maxStreak: won ? Math.max(prevStats.maxStreak, prevStats.currentStreak + 1) : prevStats.maxStreak,
-          guessDistribution: [...prevStats.guessDistribution],
-          streakDays: [...prevStats.streakDays]
-        };
-        if (won) {
-          newStats.guessDistribution[attempts - 1]++;
-          const today = new Date().toISOString().split('T')[0];
-          newStats.streakDays.push(today);
-        }
-        localStorage.setItem('wordleStats', JSON.stringify(newStats));
-        return newStats;
-      });
-    }
-  }, [isPracticeMode]);
+    setStats(prevStats => {
+      const newStats = {
+        ...prevStats,
+        played: prevStats.played + 1,
+        won: won ? prevStats.won + 1 : prevStats.won,
+        currentStreak: won ? prevStats.currentStreak + 1 : 0,
+        maxStreak: won ? Math.max(prevStats.maxStreak, prevStats.currentStreak + 1) : prevStats.maxStreak,
+        guessDistribution: [...prevStats.guessDistribution],
+        streakDays: [...prevStats.streakDays]
+      };
+      if (won) {
+        newStats.guessDistribution[attempts - 1]++;
+        const today = new Date().toISOString().split('T')[0];
+        newStats.streakDays.push(today);
+      }
+      localStorage.setItem('wordleStats', JSON.stringify(newStats));
+      return newStats;
+    });
+  }, []);
 
   const handleKeyPress = useCallback((key: string) => {
     if (gameOver) return;
@@ -151,58 +165,88 @@ export function useWordle(isPracticeMode: boolean) {
         alert('Bu söz siyahıda yoxdur!');
         return;
       }
+
+      // Проверка на повторение слова
+      if (guesses.includes(currentGuess)) {
+        setShake(true);
+        setTimeout(() => setShake(false), 300);
+        alert('Bu söz artıq istifadə olunub!');
+        return;
+      }
       
-      const newGuesses = [...guesses, currentGuess];
+      const newGuesses = [...guesses, currentGuess].slice(0, MAX_ATTEMPTS);
       setGuesses(newGuesses);
-      localStorage.setItem(`wordleGuesses_${word}`, JSON.stringify(newGuesses));
+      if (!isPracticeMode) {
+        localStorage.setItem(`wordleGuesses_${word}`, JSON.stringify(newGuesses));
+      }
       updateKeyStates(currentGuess);
       setCurrentGuess('');
 
       if (currentGuess === word) {
         setGameOver(true);
         setGameWon(true);
-        updateStats(true, newGuesses.length);
+        if (isPracticeMode) {
+          setPracticeStreak(prev => prev + 1);
+        } else {
+          updateStats(true, newGuesses.length);
+          setDailyWordFound(true);
+        }
       } else if (newGuesses.length >= MAX_ATTEMPTS) {
         setGameOver(true);
-        updateStats(false, newGuesses.length);
+        if (isPracticeMode) {
+          setPracticeStreak(0);
+        } else {
+          updateStats(false, newGuesses.length);
+        }
       }
     } else if (key === 'Backspace') {
-      setCurrentGuess(currentGuess.slice(0, -1));
+      setCurrentGuess(prev => prev.slice(0, -1));
     } else if (currentGuess.length < 5) {
-      setCurrentGuess(currentGuess + key.toLowerCase());
+      setCurrentGuess(prev => prev + key.toLowerCase());
     }
-  }, [currentGuess, guesses, word, gameOver, updateKeyStates, updateStats]);
+  }, [currentGuess, guesses, word, gameOver, updateKeyStates, updateStats, isPracticeMode]);
 
-  const resetGame = () => {
-    setGuesses([]);
+  const togglePracticeMode = useCallback(() => {
+    if (isPracticeMode) {
+      setIsPracticeMode(false);
+      setPracticeStreak(0);
+      const dailyWord = getDailyWord();
+      setWord(dailyWord);
+      const savedGuesses = localStorage.getItem(`wordleGuesses_${dailyWord}`);
+      if (savedGuesses) {
+        setGuesses(JSON.parse(savedGuesses));
+      } else {
+        setGuesses([]);
+      }
+    } else {
+      setIsPracticeMode(true);
+      setPracticeStreak(0);
+      setWord(getRandomWord());
+      setGuesses([]);
+    }
     setCurrentGuess('');
     setGameOver(false);
     setGameWon(false);
     setDisabledKeys(new Set());
     setCorrectKeys(new Set());
     setPresentKeys(new Set());
-    setShake(false);
-    if (isPracticeMode) {
-      setWord(getRandomWord());
-    } else {
-      setWord(getDailyWord());
-    }
-    localStorage.removeItem('wordleKeyStates');
-  };
-
-  const loadKeyStates = useCallback(() => {
-    const storedKeyStates = localStorage.getItem('wordleKeyStates');
-    if (storedKeyStates) {
-      const { correctKeys, presentKeys, disabledKeys } = JSON.parse(storedKeyStates);
-      setCorrectKeys(new Set(correctKeys));
-      setPresentKeys(new Set(presentKeys));
-      setDisabledKeys(new Set(disabledKeys));
-    }
-  }, []);
+  }, [isPracticeMode]);
 
   useEffect(() => {
-    loadKeyStates();
-  }, [loadKeyStates]);
+    if (isPracticeMode && gameOver && gameWon) {
+      const timer = setTimeout(() => {
+        setWord(getRandomWord());
+        setGuesses([]);
+        setCurrentGuess('');
+        setGameOver(false);
+        setGameWon(false);
+        setDisabledKeys(new Set());
+        setCorrectKeys(new Set());
+        setPresentKeys(new Set());
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isPracticeMode, gameOver, gameWon]);
 
   return {
     word,
@@ -217,7 +261,9 @@ export function useWordle(isPracticeMode: boolean) {
     timeUntilNextWord,
     stats,
     handleKeyPress,
-    resetGame,
-    loadKeyStates,
+    isPracticeMode,
+    togglePracticeMode,
+    practiceStreak,
+    dailyWordFound,
   };
 }

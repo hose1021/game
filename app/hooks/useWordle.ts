@@ -215,18 +215,24 @@ export function useWordle() {
       const savedGuesses = localStorage.getItem(`wordleGuesses_${dailyWord}`);
       if (savedGuesses) {
         setGuesses(JSON.parse(savedGuesses));
+        // Проверяем, не закончена ли уже ежедневная игра
+        const parsedGuesses = JSON.parse(savedGuesses);
+        setGameOver(parsedGuesses.includes(dailyWord));
+        setGameWon(parsedGuesses.includes(dailyWord));
       } else {
         setGuesses([]);
+        setGameOver(false);
+        setGameWon(false);
       }
     } else {
       setIsPracticeMode(true);
       setPracticeStreak(0);
       setWord(getRandomWord());
       setGuesses([]);
+      setGameOver(false);
+      setGameWon(false);
     }
     setCurrentGuess('');
-    setGameOver(false);
-    setGameWon(false);
     setDisabledKeys(new Set());
     setCorrectKeys(new Set());
     setPresentKeys(new Set());

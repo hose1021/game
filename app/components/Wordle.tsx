@@ -222,7 +222,15 @@ export default function Wordle() {
       {/* Footer with keyboard */}
       <footer className="w-full px-4 py-2 bg-background">
         <div className="max-w-lg mx-auto">
-          {!gameOver && (
+          {!gameOver && !isPracticeMode && (
+            <Keyboard 
+              onKeyPress={handleKeyPress} 
+              disabledKeys={disabledKeys}
+              correctKeys={correctKeys}
+              presentKeys={presentKeys}
+            />
+          )}
+          {isPracticeMode && (
             <Keyboard 
               onKeyPress={handleKeyPress} 
               disabledKeys={disabledKeys}

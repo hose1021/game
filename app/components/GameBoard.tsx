@@ -5,7 +5,6 @@ interface GameBoardProps {
   currentGuess: string;
   word: string;
   gameOver: boolean;
-  // Удалим неиспользуемый проп 'shake'
 }
 
 interface LetterProps {

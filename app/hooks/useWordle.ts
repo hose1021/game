@@ -64,6 +64,18 @@ export function useWordle(isPracticeMode: boolean) {
 
   useEffect(() => {
     const dailyWord = getDailyWord();
+    const lastPlayedDate = localStorage.getItem('lastPlayedDate');
+    const currentDate = new Date().toDateString();
+
+    if (lastPlayedDate !== currentDate) {
+      // Новый день - очищаем состояние клавиатуры
+      setDisabledKeys(new Set());
+      setCorrectKeys(new Set());
+      setPresentKeys(new Set());
+      localStorage.removeItem('wordleKeyStates');
+      localStorage.setItem('lastPlayedDate', currentDate);
+    }
+
     setWord(dailyWord);
     const savedGuesses = localStorage.getItem(`wordleGuesses_${dailyWord}`);
     if (savedGuesses) {
@@ -175,6 +187,7 @@ export function useWordle(isPracticeMode: boolean) {
     } else {
       setWord(getDailyWord());
     }
+    localStorage.removeItem('wordleKeyStates');
   };
 
   const loadKeyStates = useCallback(() => {

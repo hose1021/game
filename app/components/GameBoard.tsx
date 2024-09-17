@@ -31,20 +31,41 @@ interface RowProps {
 
 const Row: React.FC<RowProps> = ({ guess, word, current = false }) => {
   const tiles = [];
+  const letterCounts: { [key: string]: number } = {};
 
+  // Подсчет букв в загаданном слове
+  for (const letter of word) {
+    letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+  }
+
+  // Массив для хранения статусов букв
+  const statuses: string[] = new Array(5).fill('empty');
+
+  // Первый проход: отметить правильные буквы
   for (let i = 0; i < 5; i++) {
-    const letter = guess[i];
-    let status = 'empty';
+    if (guess[i] === word[i] && guess !== '') {
+      statuses[i] = 'correct';
+      letterCounts[guess[i]]--; // Уменьшаем количество доступных букв
+    }
+  }
 
-    if (letter) {
-      if (word[i] === letter) {
-        status = 'correct';
-      } else if (word.includes(letter)) {
-        status = 'present';
+  // Второй проход: отметить присутствующие буквы
+  for (let i = 0; i < 5; i++) {
+    if (statuses[i] === 'empty') {
+      const guessedLetter = guess[i];
+      if (letterCounts[guessedLetter] > 0) {
+        statuses[i] = 'present'; // Отметить, что буква есть, но на неверном месте
+        letterCounts[guessedLetter]--; // Уменьшаем количество оставшихся букв
       } else {
-        status = 'absent';
+        statuses[i] = 'absent'; // Буква отсутствует
       }
     }
+  }
+
+  // Создание тайлов для строки
+  for (let i = 0; i < 5; i++) {
+    const letter = guess[i];
+    const status = statuses[i];
 
     tiles.push(
       <div

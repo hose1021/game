@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 interface GameBoardProps {
   guesses: string[];
@@ -7,67 +7,44 @@ interface GameBoardProps {
   gameOver: boolean;
 }
 
-export const GameBoard: React.FC<GameBoardProps> = ({ guesses, currentGuess, word, gameOver }) => {
-  const emptyRows = 6 - guesses.length - (gameOver ? 0 : 1);
-
-  return (
-    <div className="grid grid-rows-6 gap-1">
-      {guesses.map((guess, i) => (
-        <Row key={i} guess={guess} word={word} />
-      ))}
-      {!gameOver && <Row guess={currentGuess} word={word} current />}
-      {Array.from({ length: Math.max(0, emptyRows) }).map((_, i) => (
-        <Row key={`empty-${i}`} guess="" word={word} />
-      ))}
-    </div>
-  );
-};
-
 interface RowProps {
   guess: string;
   word: string;
   current?: boolean;
 }
 
+// Оптимизируем Row компонент
 const Row: React.FC<RowProps> = ({ guess, word, current = false }) => {
-  const tiles = [];
-  const letterCounts: { [key: string]: number } = {};
-
-  // Подсчет букв в загаданном слове
-  for (const letter of word) {
-    letterCounts[letter] = (letterCounts[letter] || 0) + 1;
-  }
-
-  // Массив для хранения статусов букв
-  const statuses: string[] = new Array(5).fill('empty');
-
-  // Первый проход: отметить правильные буквы
-  for (let i = 0; i < 5; i++) {
-    if (guess[i] === word[i] && guess !== '') {
-      statuses[i] = 'correct';
-      letterCounts[guess[i]]--; // Уменьшаем количество доступных букв
+  const tiles = useMemo(() => {
+    const letterCounts: { [key: string]: number } = {};
+    for (const letter of word) {
+      letterCounts[letter] = (letterCounts[letter] || 0) + 1;
     }
-  }
 
-  // Второй проход: отметить присутствующие буквы
-  for (let i = 0; i < 5; i++) {
-    if (statuses[i] === 'empty') {
-      const guessedLetter = guess[i];
-      if (letterCounts[guessedLetter] > 0) {
-        statuses[i] = 'present'; // Отметить, что буква есть, но на неверном месте
-        letterCounts[guessedLetter]--; // Уменьшаем количество оставшихся букв
-      } else {
-        statuses[i] = 'absent'; // Буква отсутствует
+    const statuses = new Array(5).fill('empty');
+
+    // Первый проход: отметить правильные буквы
+    for (let i = 0; i < 5; i++) {
+      if (guess[i] === word[i] && guess !== '') {
+        statuses[i] = 'correct';
+        letterCounts[guess[i]]--;
       }
     }
-  }
 
-  // Создание тайлов для строки
-  for (let i = 0; i < 5; i++) {
-    const letter = guess[i];
-    const status = statuses[i];
+    // Второй проход: отметить присутствующие буквы
+    for (let i = 0; i < 5; i++) {
+      if (statuses[i] === 'empty') {
+        const guessedLetter = guess[i];
+        if (letterCounts[guessedLetter] > 0) {
+          statuses[i] = 'present';
+          letterCounts[guessedLetter]--;
+        } else {
+          statuses[i] = 'absent';
+        }
+      }
+    }
 
-    tiles.push(
+    return statuses.map((status, i) => (
       <div
         key={i}
         className={`w-14 h-14 border-2 flex items-center justify-center text-2xl font-bold rounded
@@ -82,10 +59,29 @@ const Row: React.FC<RowProps> = ({ guess, word, current = false }) => {
             : 'border-gray-300 dark:border-gray-600'
           }`}
       >
-        {letter ? letter.toUpperCase() : ''}
+        {guess[i] ? guess[i].toUpperCase() : ''}
       </div>
-    );
-  }
+    ));
+  }, [guess, word, current]);
 
   return <div className="flex gap-1">{tiles}</div>;
+};
+
+// Мемоизируем Row компонент
+const MemoizedRow = React.memo(Row);
+
+export const GameBoard: React.FC<GameBoardProps> = ({ guesses, currentGuess, word, gameOver }) => {
+  const emptyRows = 6 - guesses.length - (gameOver ? 0 : 1);
+
+  return (
+    <div className="grid grid-rows-6 gap-1">
+      {guesses.map((guess, i) => (
+        <MemoizedRow key={i} guess={guess} word={word} />
+      ))}
+      {!gameOver && <MemoizedRow guess={currentGuess} word={word} current />}
+      {Array.from({ length: Math.max(0, emptyRows) }).map((_, i) => (
+        <MemoizedRow key={`empty-${i}`} guess="" word={word} />
+      ))}
+    </div>
+  );
 };

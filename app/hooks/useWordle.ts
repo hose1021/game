@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getDailyWord, getNextWordTime, isValidWord, getRandomWord } from '../utils/words';
+import { getDailyWord, getNextWordTime, isValidWord } from '../utils/words';
+import { usePracticeMode } from './usePracticeMode';
 
 const MAX_ATTEMPTS = 6;
 
@@ -22,36 +23,29 @@ export function useWordle() {
     guessDistribution: Array(MAX_ATTEMPTS).fill(0),
     streakDays: [] as string[]
   })));
-  const [isPracticeMode, setIsPracticeMode] = useState(false);
-  const [practiceStreak, setPracticeStreak] = useState(0);
   const [dailyWordFound, setDailyWordFound] = useState(false);
-
-  // Отдельные состояния для практического режима
-  const [practiceWord, setPracticeWord] = useState('');
-  const [practiceGuesses, setPracticeGuesses] = useState<string[]>([]);
-  const [practiceDisabledKeys, setPracticeDisabledKeys] = useState(new Set<string>());
-  const [practiceCorrectKeys, setPracticeCorrectKeys] = useState(new Set<string>());
-  const [practicePresentKeys, setPracticePresentKeys] = useState(new Set<string>());
+  const [isPracticeMode, setIsPracticeMode] = useState(false);
 
   const wordRef = useRef(word);
   const guessesRef = useRef(guesses);
   wordRef.current = word;
   guessesRef.current = guesses;
 
-  const updateKeyStates = useCallback((guess: string, isDaily: boolean) => {
-    const currentWord = isDaily ? wordRef.current : practiceWord;
-    const newCorrectKeys = new Set(isDaily ? correctKeys : practiceCorrectKeys);
-    const newPresentKeys = new Set(isDaily ? presentKeys : practicePresentKeys);
-    const newDisabledKeys = new Set(isDaily ? disabledKeys : practiceDisabledKeys);
+  const practice = usePracticeMode();
+
+  const updateKeyStates = useCallback((guess: string) => {
+    const newCorrectKeys = new Set(correctKeys);
+    const newPresentKeys = new Set(presentKeys);
+    const newDisabledKeys = new Set(disabledKeys);
     const letterCounts: { [key: string]: number } = {};
 
-    for (const letter of currentWord) {
+    for (const letter of wordRef.current) {
       letterCounts[letter] = (letterCounts[letter] || 0) + 1;
     }
 
     for (let i = 0; i < guess.length; i++) {
       const letter = guess[i];
-      if (letter === currentWord[i]) {
+      if (letter === wordRef.current[i]) {
         newCorrectKeys.add(letter);
         letterCounts[letter]--;
       }
@@ -59,7 +53,7 @@ export function useWordle() {
 
     for (let i = 0; i < guess.length; i++) {
       const letter = guess[i];
-      if (letter !== currentWord[i]) {
+      if (letter !== wordRef.current[i]) {
         if (letterCounts[letter] > 0) {
           newPresentKeys.add(letter);
           letterCounts[letter]--;
@@ -69,21 +63,15 @@ export function useWordle() {
       }
     }
 
-    if (isDaily) {
-      setCorrectKeys(newCorrectKeys);
-      setPresentKeys(newPresentKeys);
-      setDisabledKeys(newDisabledKeys);
-      localStorage.setItem('wordleKeyStates', JSON.stringify({
-        correctKeys: Array.from(newCorrectKeys),
-        presentKeys: Array.from(newPresentKeys),
-        disabledKeys: Array.from(newDisabledKeys),
-      }));
-    } else {
-      setPracticeCorrectKeys(newCorrectKeys);
-      setPracticePresentKeys(newPresentKeys);
-      setPracticeDisabledKeys(newDisabledKeys);
-    }
-  }, [correctKeys, presentKeys, disabledKeys, practiceCorrectKeys, practicePresentKeys, practiceDisabledKeys, practiceWord]);
+    setCorrectKeys(newCorrectKeys);
+    setPresentKeys(newPresentKeys);
+    setDisabledKeys(newDisabledKeys);
+    localStorage.setItem('wordleKeyStates', JSON.stringify({
+      correctKeys: Array.from(newCorrectKeys),
+      presentKeys: Array.from(newPresentKeys),
+      disabledKeys: Array.from(newDisabledKeys),
+    }));
+  }, [correctKeys, presentKeys, disabledKeys]);
 
   const loadKeyStates = useCallback(() => {
     const storedKeyStates = localStorage.getItem('wordleKeyStates');
@@ -159,100 +147,84 @@ export function useWordle() {
   }, []);
 
   const handleKeyPress = useCallback((key: string) => {
-    if (gameOver) return;
+    if (isPracticeMode) {
+      practice.handlePracticeKeyPress(key);
+    } else {
+      if (gameOver) return;
 
-    const currentWordRef = isPracticeMode ? practiceWord : wordRef.current;
-    const currentGuessesRef = isPracticeMode ? practiceGuesses : guessesRef.current;
+      if (key === 'Enter') {
+        if (currentGuess.length !== 5) {
+          setShake(true);
+          setTimeout(() => setShake(false), 300);
+          return;
+        }
 
-    if (key === 'Enter') {
-      if (currentGuess.length !== 5) {
-        setShake(true);
-        setTimeout(() => setShake(false), 300);
-        return;
-      }
+        if (!isValidWord(currentGuess)) {
+          setShake(true);
+          setTimeout(() => setShake(false), 300);
+          alert('Bu söz siyahıda yoxdur!');
+          return;
+        }
 
-      if (!isValidWord(currentGuess)) {
-        setShake(true);
-        setTimeout(() => setShake(false), 300);
-        alert('Bu söz siyahıda yoxdur!');
-        return;
-      }
+        if (guessesRef.current.includes(currentGuess)) {
+          setShake(true);
+          setTimeout(() => setShake(false), 300);
+          alert('Bu söz artıq istifadə olunub!');
+          return;
+        }
 
-      if (currentGuessesRef.includes(currentGuess)) {
-        setShake(true);
-        setTimeout(() => setShake(false), 300);
-        alert('Bu söz artıq istifadə olunub!');
-        return;
-      }
-
-      const newGuesses = [...currentGuessesRef, currentGuess].slice(0, MAX_ATTEMPTS);
-      if (isPracticeMode) {
-        setPracticeGuesses(newGuesses);
-      } else {
+        const newGuesses = [...guessesRef.current, currentGuess].slice(0, MAX_ATTEMPTS);
         setGuesses(newGuesses);
         const currentDate = new Date().toDateString();
         localStorage.setItem(`wordleGuesses_daily_${currentDate}`, JSON.stringify(newGuesses));
-      }
-      updateKeyStates(currentGuess, !isPracticeMode);
-      setCurrentGuess('');
+        updateKeyStates(currentGuess);
+        setCurrentGuess('');
 
-      if (currentGuess === currentWordRef) {
-        setGameOver(true);
-        setGameWon(true);
-        if (isPracticeMode) {
-          setPracticeStreak(prev => prev + 1);
-        } else {
+        if (currentGuess === wordRef.current) {
+          setGameOver(true);
+          setGameWon(true);
           updateStats(true, newGuesses.length);
           setDailyWordFound(true);
-        }
-      } else if (newGuesses.length >= MAX_ATTEMPTS) {
-        setGameOver(true);
-        if (!isPracticeMode) {
+        } else if (newGuesses.length >= MAX_ATTEMPTS) {
+          setGameOver(true);
           updateStats(false, newGuesses.length);
         }
+      } else if (key === 'Backspace') {
+        setCurrentGuess(prev => prev.slice(0, -1));
+      } else if (currentGuess.length < 5) {
+        setCurrentGuess(prev => prev + key.toLowerCase());
       }
-    } else if (key === 'Backspace') {
-      setCurrentGuess(prev => prev.slice(0, -1));
-    } else if (currentGuess.length < 5) {
-      setCurrentGuess(prev => prev + key.toLowerCase());
     }
-  }, [currentGuess, gameOver, updateKeyStates, updateStats, isPracticeMode, practiceWord, practiceGuesses]);
+  }, [isPracticeMode, practice.handlePracticeKeyPress, gameOver, currentGuess, updateKeyStates, updateStats]);
 
   const togglePracticeMode = useCallback(() => {
     if (isPracticeMode) {
-      // Возвращаемся в ежедневный режим
+      // Возвращаемся к обычному режиму
       initializeGame();
     } else {
-      // Переходим в практический режим
-      setPracticeWord(getRandomWord());
-      setPracticeGuesses([]);
-      setPracticeDisabledKeys(new Set());
-      setPracticeCorrectKeys(new Set());
-      setPracticePresentKeys(new Set());
+      // Переходим в режим практики
+      practice.resetPracticeGame();
     }
     setIsPracticeMode(!isPracticeMode);
-    setPracticeStreak(0);
-    setCurrentGuess('');
-    setGameOver(false);
-    setGameWon(false);
-  }, [isPracticeMode, initializeGame]);
+  }, [isPracticeMode, initializeGame, practice.resetPracticeGame]);
 
   return {
-    word: isPracticeMode ? practiceWord : word,
-    guesses: isPracticeMode ? practiceGuesses : guesses,
-    currentGuess,
-    gameOver,
-    gameWon,
-    disabledKeys: isPracticeMode ? practiceDisabledKeys : disabledKeys,
-    correctKeys: isPracticeMode ? practiceCorrectKeys : correctKeys,
-    presentKeys: isPracticeMode ? practicePresentKeys : presentKeys,
-    shake,
+    word: isPracticeMode ? practice.practiceWord : word,
+    guesses: isPracticeMode ? practice.practiceGuesses : guesses,
+    currentGuess: isPracticeMode ? practice.practiceCurrentGuess : currentGuess,
+    gameOver: isPracticeMode ? practice.practiceGameOver : gameOver,
+    gameWon: isPracticeMode ? practice.practiceGameWon : gameWon,
+    disabledKeys: isPracticeMode ? practice.practiceDisabledKeys : disabledKeys,
+    correctKeys: isPracticeMode ? practice.practiceCorrectKeys : correctKeys,
+    presentKeys: isPracticeMode ? practice.practicePresentKeys : presentKeys,
+    shake: isPracticeMode ? practice.practiceShake : shake,
     timeUntilNextWord,
     stats,
     handleKeyPress,
+    dailyWordFound,
+    initializeGame,
     isPracticeMode,
     togglePracticeMode,
-    practiceStreak,
-    dailyWordFound,
+    practiceStreak: practice.practiceStreak
   };
 }

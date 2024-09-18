@@ -4,6 +4,15 @@ import { usePracticeMode } from './usePracticeMode';
 
 const MAX_ATTEMPTS = 6;
 
+interface Stats {
+  played: number;
+  won: number;
+  currentStreak: number;
+  maxStreak: number;
+  guessDistribution: number[];
+  streakDays: string[];
+}
+
 export function useWordle() {
   const [word, setWord] = useState('');
   const [guesses, setGuesses] = useState<string[]>([]);
@@ -130,7 +139,7 @@ export function useWordle() {
   }, []);
 
   const updateStats = useCallback((won: boolean, attempts: number) => {
-    setStats(prevStats => {
+    setStats((prevStats: Stats) => {
       const newStats = { ...prevStats, played: prevStats.played + 1 };
       if (won) {
         newStats.won += 1;

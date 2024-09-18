@@ -159,6 +159,15 @@ export default function Wordle() {
         setShowWinModal(false);
     };
 
+    // Добавляем эффект для проверки первого посещения
+    useEffect(() => {
+        const hasVisitedBefore = localStorage.getItem('hasVisitedBefore');
+        if (!hasVisitedBefore) {
+            setShowRules(true);
+            localStorage.setItem('hasVisitedBefore', 'true');
+        }
+    }, []);
+
     return (
         <div
             className="flex flex-col min-h-screen bg-gradient-to-b from-background to-background-secondary text-foreground"

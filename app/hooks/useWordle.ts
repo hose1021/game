@@ -24,14 +24,14 @@ export function useWordle() {
   const [presentKeys, setPresentKeys] = useState(new Set<string>());
   const [shake, setShake] = useState(false);
   const [timeUntilNextWord, setTimeUntilNextWord] = useState('');
-  const [stats, setStats] = useState(() => JSON.parse(localStorage.getItem('wordleStats') || JSON.stringify({
+  const [stats, setStats] = useState<Stats>({
     played: 0,
     won: 0,
     currentStreak: 0,
     maxStreak: 0,
     guessDistribution: Array(MAX_ATTEMPTS).fill(0),
-    streakDays: [] as string[]
-  })));
+    streakDays: []
+  });
   const [dailyWordFound, setDailyWordFound] = useState(false);
   const [isPracticeMode, setIsPracticeMode] = useState(false);
 

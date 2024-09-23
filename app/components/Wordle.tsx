@@ -184,17 +184,20 @@ export default function Wordle() {
             {/* Header */}
             <header className="w-full px-4 py-2">
                 <div className="max-w-lg mx-auto flex justify-between items-center">
-                    <button onClick={() => setShowRules(true)}
-                            className="text-sm p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                        <FiHelpCircle size={24}/>
-                    </button>
-                    <h1 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">Azərbaycan
-                        Wordle</h1>
                     <div className="flex items-center space-x-2">
+                        <button onClick={() => setShowRules(true)}
+                                className="text-sm p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                            <FiHelpCircle size={24}/>
+                        </button>
                         <button onClick={togglePracticeMode}
                                 className="text-sm p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                             {isPracticeMode ? <FiSquare size={24}/> : <FiPlay size={24}/>}
                         </button>
+                    </div>
+                    <h1 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
+                        Wordle
+                    </h1>
+                    <div className="flex items-center space-x-2">
                         <button onClick={() => setShowStats(true)}
                                 className="text-sm p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                             <FiBarChart2 size={24}/>

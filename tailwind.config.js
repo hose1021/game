@@ -49,8 +49,15 @@ module.exports = {
       opacity: {
         '80': '0.8',
       },
+      willChange: {
+        'transform': 'transform',
+      },
+      transform: {
+        'gpu': 'translateZ(0)',
+      },
     },
   },
+  variants: {},
   plugins: [],
   darkMode: 'class',
 }

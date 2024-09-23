@@ -117,3 +117,9 @@ body {
   background-color: #3a3a3c;
   color: #ffffff;
 }
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}

@@ -6,16 +6,7 @@ import dynamic from 'next/dynamic';
 import {useTheme} from 'next-themes';
 import html2canvas from 'html2canvas';
 import Image from 'next/image';
-
-// Динамический импорт иконок
-const FiMoon = dynamic(() => import('react-icons/fi').then(mod => mod.FiMoon), {ssr: false});
-const FiSun = dynamic(() => import('react-icons/fi').then(mod => mod.FiSun), {ssr: false});
-const FiShare2 = dynamic(() => import('react-icons/fi').then(mod => mod.FiShare2), {ssr: false});
-const FiHelpCircle = dynamic(() => import('react-icons/fi').then(mod => mod.FiHelpCircle), {ssr: false});
-const FiBarChart2 = dynamic(() => import('react-icons/fi').then(mod => mod.FiBarChart2), {ssr: false});
-const FiSend = dynamic(() => import('react-icons/fi').then(mod => mod.FiSend), {ssr: false});
-const FiPlay = dynamic(() => import('react-icons/fi').then(mod => mod.FiPlay), {ssr: false});
-const FiSquare = dynamic(() => import('react-icons/fi').then(mod => mod.FiSquare), {ssr: false});
+import {Icon} from '@iconify/react';
 
 const MemoizedKeyboard = dynamic(() => import('./Keyboard').then(mod => mod.default), {ssr: false});
 const MemoizedGameBoard = dynamic(() => import('./GameBoard').then(mod => mod.default), {ssr: false});
@@ -176,7 +167,7 @@ export default function Wordle() {
 
     return (
         <div
-            className="flex flex-col min-h-screen bg-gradient-to-b from-background to-background-secondary text-foreground"
+            className="flex flex-col min-h-screen bg-gradient-to-b from-background to-background-secondary text-foreground transform-gpu"
             ref={containerRef}
             tabIndex={0}
             onKeyDown={handleKeyDown}
@@ -187,11 +178,11 @@ export default function Wordle() {
                     <div className="flex items-center space-x-2">
                         <button onClick={() => setShowRules(true)}
                                 className="text-sm p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                            <FiHelpCircle size={24}/>
+                            <Icon icon="mdi:help-circle" width="24" height="24" />
                         </button>
                         <button onClick={togglePracticeMode}
                                 className="text-sm p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                            {isPracticeMode ? <FiSquare size={24}/> : <FiPlay size={24}/>}
+                            {isPracticeMode ? <Icon icon="mdi:square" width="24" height="24" /> : <Icon icon="mdi:play" width="24" height="24" />}
                         </button>
                     </div>
                     <h1 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
@@ -200,11 +191,11 @@ export default function Wordle() {
                     <div className="flex items-center space-x-2">
                         <button onClick={() => setShowStats(true)}
                                 className="text-sm p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                            <FiBarChart2 size={24}/>
+                            <Icon icon="mdi:chart-bar" width="24" height="24" />
                         </button>
                         <button onClick={toggleTheme}
                                 className="text-sm p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                            {theme === 'dark' ? <FiSun size={24}/> : <FiMoon size={24}/>}
+                            {theme === 'dark' ? <Icon icon="mdi:white-balance-sunny" width="24" height="24" /> : <Icon icon="mdi:weather-night" width="24" height="24" />}
                         </button>
                     </div>
                 </div>
@@ -243,7 +234,7 @@ export default function Wordle() {
                         {gameWon && (
                             <button onClick={() => setShowWinModal(true)}
                                     className="bg-gradient-to-r from-primary to-secondary text-white font-bold py-2 px-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center">
-                                <FiShare2 className="mr-2"/> Nəticəni paylaş
+                                <Icon icon="mdi:share-variant" width="24" height="24" className="mr-2" /> Nəticəni paylaş
                             </button>
                         )}
                     </div>
@@ -322,19 +313,19 @@ export default function Wordle() {
                         onClick={() => shareResult('twitter')}
                         className="bg-blue-400 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded flex items-center justify-center"
                     >
-                        <FiShare2 className="mr-2"/> Twitter
+                        <Icon icon="mdi:twitter" width="24" height="24" className="mr-2" /> Twitter
                     </button>
                     <button
                         onClick={() => shareResult('whatsapp')}
                         className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded flex items-center justify-center"
                     >
-                        <FiShare2 className="mr-2"/> WhatsApp
+                        <Icon icon="mdi:whatsapp" width="24" height="24" className="mr-2" /> WhatsApp
                     </button>
                     <button
                         onClick={() => shareResult('telegram')}
                         className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded flex items-center justify-center"
                     >
-                        <FiSend className="mr-2"/> Telegram
+                        <Icon icon={'mdi:send'} className="mr-2"/> Telegram
                     </button>
                 </div>
                 {shareImage && (

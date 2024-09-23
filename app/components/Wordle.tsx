@@ -2,20 +2,25 @@
 
 import React, {useCallback, useRef, useState, useEffect} from 'react';
 import {useWordle} from '../hooks/useWordle';
-import Keyboard from './Keyboard';
-import Modal from './Modal';
+import dynamic from 'next/dynamic';
 import {useTheme} from 'next-themes';
-import {GameBoard} from './GameBoard';
 import html2canvas from 'html2canvas';
-import {FiMoon, FiSun, FiShare2, FiHelpCircle, FiBarChart2, FiSend, FiPlay, FiSquare} from 'react-icons/fi';
-import GameStats from './GameStats';
 import Image from 'next/image';
 
-// Мемоизируем компоненты, которые не часто меняются
-const MemoizedKeyboard = React.memo(Keyboard);
-const MemoizedGameBoard = React.memo(GameBoard);
-const MemoizedModal = React.memo(Modal);
-const MemoizedGameStats = React.memo(GameStats);
+// Динамический импорт иконок
+const FiMoon = dynamic(() => import('react-icons/fi').then(mod => mod.FiMoon), {ssr: false});
+const FiSun = dynamic(() => import('react-icons/fi').then(mod => mod.FiSun), {ssr: false});
+const FiShare2 = dynamic(() => import('react-icons/fi').then(mod => mod.FiShare2), {ssr: false});
+const FiHelpCircle = dynamic(() => import('react-icons/fi').then(mod => mod.FiHelpCircle), {ssr: false});
+const FiBarChart2 = dynamic(() => import('react-icons/fi').then(mod => mod.FiBarChart2), {ssr: false});
+const FiSend = dynamic(() => import('react-icons/fi').then(mod => mod.FiSend), {ssr: false});
+const FiPlay = dynamic(() => import('react-icons/fi').then(mod => mod.FiPlay), {ssr: false});
+const FiSquare = dynamic(() => import('react-icons/fi').then(mod => mod.FiSquare), {ssr: false});
+
+const MemoizedKeyboard = dynamic(() => import('./Keyboard').then(mod => mod.default), {ssr: false});
+const MemoizedGameBoard = dynamic(() => import('./GameBoard').then(mod => mod.default), {ssr: false});
+const MemoizedModal = dynamic(() => import('./Modal').then(mod => mod.default), {ssr: false});
+const MemoizedGameStats = dynamic(() => import('./GameStats').then(mod => mod.default), {ssr: false});
 
 export default function Wordle() {
     const {
@@ -57,11 +62,11 @@ export default function Wordle() {
         }
     }, [gameOver, handleKeyPress]);
 
-    const toggleTheme = () => {
+    const toggleTheme = useCallback(() => {
         setTheme(theme === 'dark' ? 'light' : 'dark');
-    };
+    }, [theme, setTheme]);
 
-    const renderGuessMap = () => {
+    const renderGuessMap = useCallback(() => {
         const guessMap = guesses.map(guess =>
             guess.split('').map((letter, index) => {
                 if (word[index] === letter) {
@@ -97,7 +102,7 @@ export default function Wordle() {
                 ))}
             </div>
         );
-    };
+    }, [guesses, word]);
 
     const guessMapRef = useRef<HTMLDivElement>(null);
 
@@ -109,6 +114,7 @@ export default function Wordle() {
         });
         return canvas.toDataURL('image/png');
     };
+
 
     const shareResult = async (platform: 'twitter' | 'whatsapp' | 'telegram') => {
         const imageUrl = await generateShareImage();

@@ -112,9 +112,9 @@ export function useWordle() {
       const parsedGuesses = JSON.parse(savedGuesses);
       setGuesses(parsedGuesses);
       setWord(dailyWord);
-      setDailyWordFound(parsedGuesses.includes(dailyWord));
-      setGameOver(parsedGuesses.includes(dailyWord));
-      setGameWon(parsedGuesses.includes(dailyWord));
+      setDailyWordFound(parsedGuesses.includes(dailyWord) && savedGuesses.length < MAX_ATTEMPTS);
+      setGameOver(parsedGuesses.includes(dailyWord) || savedGuesses.length >= MAX_ATTEMPTS);
+      setGameWon(parsedGuesses.includes(dailyWord) && savedGuesses.length < MAX_ATTEMPTS);
     } else {
       setWord(dailyWord);
     }
@@ -204,7 +204,7 @@ export function useWordle() {
         setCurrentGuess(prev => prev + key.toLowerCase());
       }
     }
-  }, [isPracticeMode, practice.handlePracticeKeyPress, gameOver, currentGuess, updateKeyStates, updateStats]);
+  }, [isPracticeMode, practice, gameOver, currentGuess, updateKeyStates, updateStats]);
 
   const togglePracticeMode = useCallback(() => {
     if (isPracticeMode) {
@@ -215,7 +215,7 @@ export function useWordle() {
       practice.resetPracticeGame();
     }
     setIsPracticeMode(!isPracticeMode);
-  }, [isPracticeMode, initializeGame, practice.resetPracticeGame]);
+  }, [isPracticeMode, initializeGame, practice]);
 
   return {
     word: isPracticeMode ? practice.practiceWord : word,

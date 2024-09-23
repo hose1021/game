@@ -30,18 +30,15 @@
 }
 
 .correct {
-  background-color: #6aaa64;
-  color: white;
+  @apply bg-wordle-correct text-white;
 }
 
 .present {
-  background-color: #c9b458;
-  color: white;
+  @apply bg-wordle-present text-white;
 }
 
 .absent {
-  background-color: #787c7e;
-  color: white;
+  @apply bg-wordle-absent text-white;
 }
 
 .game-over {

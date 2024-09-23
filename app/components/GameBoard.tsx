@@ -13,7 +13,6 @@ interface RowProps {
   current?: boolean;
 }
 
-// Оптимизируем Row компонент
 const Row: React.FC<RowProps> = ({ guess, word, current = false }) => {
   const tiles = useMemo(() => {
     const letterCounts: { [key: string]: number } = {};
@@ -23,7 +22,6 @@ const Row: React.FC<RowProps> = ({ guess, word, current = false }) => {
 
     const statuses = new Array(5).fill('empty');
 
-    // Первый проход: отметить правильные буквы
     for (let i = 0; i < 5; i++) {
       if (guess[i] === word[i] && guess !== '') {
         statuses[i] = 'correct';
@@ -31,7 +29,6 @@ const Row: React.FC<RowProps> = ({ guess, word, current = false }) => {
       }
     }
 
-    // Второй проход: отметить присутствующие буквы
     for (let i = 0; i < 5; i++) {
       if (statuses[i] === 'empty') {
         const guessedLetter = guess[i];
@@ -67,10 +64,9 @@ const Row: React.FC<RowProps> = ({ guess, word, current = false }) => {
   return <div className="flex gap-1">{tiles}</div>;
 };
 
-// Мемоизируем Row компонент
 const MemoizedRow = React.memo(Row);
 
-export const GameBoard: React.FC<GameBoardProps> = ({ guesses, currentGuess, word, gameOver }) => {
+const GameBoard: React.FC<GameBoardProps> = ({ guesses, currentGuess, word, gameOver }) => {
   const emptyRows = 6 - guesses.length - (gameOver ? 0 : 1);
 
   return (
@@ -85,3 +81,5 @@ export const GameBoard: React.FC<GameBoardProps> = ({ guesses, currentGuess, wor
     </div>
   );
 };
+
+export default GameBoard;
